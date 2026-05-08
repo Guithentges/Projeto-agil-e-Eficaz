@@ -131,12 +131,12 @@ const Cardapio = () => {
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
       <header>
-        <h1 className="text-3xl font-semibold">Cardápio</h1>
-        <p className="text-muted-foreground">Itens vendáveis (combinações de produtos)</p>
+        <h1 className="text-2xl sm:text-3xl font-semibold">Cardápio</h1>
+        <p className="text-muted-foreground text-sm">Itens vendáveis (combinações de produtos)</p>
       </header>
 
       <Card className="p-5 border-l-4 border-l-primary shadow-elegant">
-        <form onSubmit={add} className="grid md:grid-cols-3 gap-3 items-end">
+        <form onSubmit={add} className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
           <div className="space-y-2 md:col-span-2">
             <Label>Nome do item</Label>
             <Input required value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Ex: Combo Família" />
@@ -198,10 +198,10 @@ const Cardapio = () => {
 
           return (
             <Card key={c.id} className="overflow-hidden border-l-4 border-l-transparent hover:border-l-primary transition-all">
-              <div className="p-4 flex items-center gap-6">
+              <div className="p-4 flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
                 <div className="flex-1">
                   <div className="font-semibold text-lg">{c.Nome}</div>
-                  <div className="flex gap-4 mt-1">
+                  <div className="flex flex-wrap gap-2 sm:gap-4 mt-1">
                     <div className="text-sm font-bold text-primary">{fmt(c.Valor ?? 0)} <span className="text-[10px] text-muted-foreground font-normal ml-1">VENDA</span></div>
                     <div className="text-sm font-medium text-muted-foreground">{fmt(totalCusto)} <span className="text-[10px] uppercase font-normal ml-1">CUSTO</span></div>
                     <div className={`text-sm font-bold ${margem < 30 ? "text-destructive" : "text-success"}`}>

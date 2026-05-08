@@ -244,19 +244,19 @@ const Gastos = () => {
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
-      <header className="flex items-end justify-between">
+      <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-semibold">Gastos</h1>
-          <p className="text-muted-foreground">Despesas operacionais</p>
+          <h1 className="text-2xl sm:text-3xl font-semibold">Gastos</h1>
+          <p className="text-muted-foreground text-sm">Despesas operacionais</p>
         </div>
-        <div className="text-right">
+        <div className="text-left sm:text-right">
           <div className="text-xs uppercase text-muted-foreground tracking-wider">Total</div>
-          <div className="text-2xl font-semibold text-destructive">{fmt(total)}</div>
+          <div className="text-xl sm:text-2xl font-semibold text-destructive">{fmt(total)}</div>
         </div>
       </header>
 
       <Card className="p-5">
-        <form onSubmit={add} className="grid md:grid-cols-4 gap-3 items-end">
+        <form onSubmit={add} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 items-end">
           <div className="space-y-2">
             <Label>Categoria</Label>
             <Select value={idCat} onValueChange={(val) => {
@@ -331,7 +331,8 @@ const Gastos = () => {
       </Card>
 
       <Card className="overflow-hidden">
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full text-sm min-w-[600px]">
           <thead className="bg-muted/40 text-muted-foreground">
             <tr>
               <th className="text-left px-4 py-2">Data</th>
@@ -372,6 +373,7 @@ const Gastos = () => {
             )}
           </tbody>
         </table>
+        </div>
       </Card>
     </div>
   );

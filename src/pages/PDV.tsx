@@ -323,8 +323,8 @@ const PDV = () => {
     <div className="grid lg:grid-cols-[1fr,360px] gap-6 max-w-7xl mx-auto">
       <div className="space-y-4">
         <header>
-          <h1 className="text-3xl font-semibold">PDV</h1>
-          <p className="text-muted-foreground">Toque para adicionar ao pedido</p>
+          <h1 className="text-2xl sm:text-3xl font-semibold">PDV</h1>
+          <p className="text-muted-foreground text-sm">Toque para adicionar ao pedido</p>
         </header>
         <Tabs defaultValue="cardapio" className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-4">

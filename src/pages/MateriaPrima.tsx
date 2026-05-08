@@ -61,17 +61,17 @@ const MateriaPrima = () => {
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
       <header>
-        <h1 className="text-3xl font-semibold">Matéria-Prima</h1>
-        <p className="text-muted-foreground">Insumos com custo e fator de rendimento</p>
+        <h1 className="text-2xl sm:text-3xl font-semibold">Matéria-Prima</h1>
+        <p className="text-muted-foreground text-sm">Insumos com custo e fator de rendimento</p>
       </header>
 
       <Card className="p-5">
-        <form onSubmit={add} className="grid md:grid-cols-4 gap-3 items-end">
-          <div className="space-y-2 col-span-2">
+        <form onSubmit={add} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 items-end">
+          <div className="space-y-2 sm:col-span-2">
             <Label>Nome</Label>
             <Input required value={nome} onChange={(e) => setNome(e.target.value)} />
           </div>
-          <div className="space-y-2 col-span-1">
+          <div className="space-y-2 sm:col-span-1">
             <Label>Und. de Medida</Label>
             <Select value={unidade} onValueChange={setUnidade}>
               <SelectTrigger><SelectValue placeholder="Unidade" /></SelectTrigger>
@@ -82,12 +82,13 @@ const MateriaPrima = () => {
               </SelectContent>
             </Select>
           </div>
-          <Button type="submit" className="col-span-1"><Plus className="h-4 w-4 mr-1" /> Adicionar</Button>
+          <Button type="submit" className="sm:col-span-1"><Plus className="h-4 w-4 mr-1" /> Adicionar</Button>
         </form>
       </Card>
 
       <Card className="overflow-hidden">
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full text-sm min-w-[450px]">
           <thead className="bg-muted/40 text-muted-foreground">
             <tr>
               <th className="text-left px-4 py-2">Nome</th>
@@ -135,6 +136,7 @@ const MateriaPrima = () => {
             )}
           </tbody>
         </table>
+        </div>
       </Card>
     </div>
   );

@@ -134,12 +134,12 @@ const Produtos = () => {
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
       <header>
-        <h1 className="text-3xl font-semibold">Produtos</h1>
-        <p className="text-muted-foreground">Cadastre produtos com sua receita (matérias-primas)</p>
+        <h1 className="text-2xl sm:text-3xl font-semibold">Produtos</h1>
+        <p className="text-muted-foreground text-sm">Cadastre produtos com sua receita (matérias-primas)</p>
       </header>
 
       <Card className="p-5">
-        <form onSubmit={add} className="grid md:grid-cols-3 gap-3 items-end">
+        <form onSubmit={add} className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
           <div className="space-y-2 md:col-span-2">
             <Label>Nome do produto</Label>
             <Input required value={nome} onChange={(e) => setNome(e.target.value)} />

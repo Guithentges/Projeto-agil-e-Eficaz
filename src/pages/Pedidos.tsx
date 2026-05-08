@@ -127,8 +127,8 @@ const Pedidos = () => {
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
       <header>
-        <h1 className="text-3xl font-semibold">Pedidos</h1>
-        <p className="text-muted-foreground">Gerenciamento de cozinha e histórico de vendas</p>
+        <h1 className="text-2xl sm:text-3xl font-semibold">Pedidos</h1>
+        <p className="text-muted-foreground text-sm">Gerenciamento de cozinha e histórico de vendas</p>
       </header>
 
       <Tabs defaultValue="cozinha" className="w-full">
