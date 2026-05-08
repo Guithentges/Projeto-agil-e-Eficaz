@@ -142,7 +142,7 @@ const Dashboard = () => {
     <div className="space-y-6 max-w-7xl mx-auto">
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-semibold">Olá{empresaNome ? `, ${empresaNome}` : ""}</h1>
+          <h1 className="text-2xl sm:text-3xl font-semibold">Olá{empresaNome ? `, ${empresaNome}` : ""}</h1>
           <p className="text-muted-foreground mt-1">Visão geral do seu negócio e fluxo de caixa</p>
         </div>
         
@@ -156,7 +156,7 @@ const Dashboard = () => {
         </Tabs>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
         <Stat icon={DollarSign} label="Receita Bruta" value={fmt(receita)} accent="bg-primary/20 text-primary" />
         <Stat icon={Wallet} label="Gastos" value={fmt(gastos)} accent="bg-destructive/20 text-destructive" />
         <Stat icon={TrendingUp} label="Lucro Líquido" value={fmt(lucro)} accent="bg-success/20 text-success" />

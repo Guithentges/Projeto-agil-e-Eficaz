@@ -55,12 +55,13 @@ const Estoque = () => {
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
       <header>
-        <h1 className="text-3xl font-semibold">Estoque</h1>
-        <p className="text-muted-foreground">Saldo atual de matérias-primas</p>
+        <h1 className="text-2xl sm:text-3xl font-semibold">Estoque</h1>
+        <p className="text-muted-foreground text-sm">Saldo atual de matérias-primas</p>
       </header>
 
       <Card className="overflow-hidden">
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full text-sm min-w-[400px]">
           <thead className="bg-muted/40 text-muted-foreground">
             <tr>
               <th className="text-left px-4 py-2">Matéria-prima</th>
@@ -108,6 +109,7 @@ const Estoque = () => {
             )}
           </tbody>
         </table>
+        </div>
       </Card>
     </div>
   );
