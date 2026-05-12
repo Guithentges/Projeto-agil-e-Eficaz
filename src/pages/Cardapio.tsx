@@ -88,8 +88,9 @@ const Cardapio = () => {
   };
 
   const remove = async (id: number) => {
-    await supabase.from("ProduxCard").delete().eq("id_cardapio", id);
-    const { error } = await supabase.from("Cardapio").delete().eq("id", id);
+    if (!empresaId) return;
+    await supabase.from("ProduxCard").delete().eq("id_cardapio", id).eq("id_empresa", empresaId);
+    const { error } = await supabase.from("Cardapio").delete().eq("id", id).eq("id_empresa", empresaId);
     if (error) return toast.error(error.message);
     load();
   };
@@ -112,7 +113,8 @@ const Cardapio = () => {
   };
 
   const removeProd = async (id: number) => {
-    await supabase.from("ProduxCard").delete().eq("id", id);
+    if (!empresaId) return;
+    await supabase.from("ProduxCard").delete().eq("id", id).eq("id_empresa", empresaId);
     load();
   };
 
