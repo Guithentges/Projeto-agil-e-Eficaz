@@ -153,148 +153,34 @@ const PDV = () => {
     if (!empresaId || itensCount === 0) return;
     setBusy(true);
     try {
-      // 1. Calculate Requirements (Mods aware)
-      const reqM: Record<number, { nome: string; qtd: number }> = {}; // Materias
-      const reqP: Record<number, { nome: string; qtd: number }> = {}; // Produtos
+      // Payload simplificado para não expor a lógica de negócio no frontend
+      const payload = carrinho.map(row => ({
+          id: row.item.id,
+          type: row.item.type, // 'cardapio' or 'produto'
+          qtd: row.qtd,
+          insumos_removidos: row.mods.filter(m => m.tipo === 'REMOVER').map(m => m.id_materia)
+      }));
 
-      for (const row of carrinho) {
-        const { item, qtd, mods } = row;
-        // Map of NAMES to remove (more robust for combos)
-        const removedNames = new Set(mods.filter(m => m.tipo === 'REMOVER').map(m => m.nome.toLowerCase()));
-
-        if (item.type === "cardapio") {
-          const { data: pc } = await supabase.from("ProduxCard")
-            .select("id_produto, Produtos:id_produto(Nome, is_unique)")
-            .eq("id_cardapio", item.id);
-          
-          for (const p of pc ?? []) {
-            const isUnique = (p as any).Produtos?.is_unique;
-            if (isUnique) {
-              const pid = p.id_produto!;
-              reqP[pid] = { nome: (p as any).Produtos?.Nome || "Produto", qtd: (reqP[pid]?.qtd ?? 0) + qtd };
-            } else {
-              const { data: pm } = await supabase.from("ProduxMateria")
-                .select("id_materia, quantidade, MateriaPrima:id_materia(nome)")
-                .eq("id_produto", p.id_produto);
-              
-              if (!pm || pm.length === 0) {
-                const pid = p.id_produto!;
-                reqP[pid] = { nome: (p as any).Produtos?.Nome || "Produto", qtd: (reqP[pid]?.qtd ?? 0) + qtd };
-              } else {
-                for (const r of pm ?? []) {
-                  const mid = Number(r.id_materia);
-                  const mNome = ((r as any).MateriaPrima?.nome || "").toLowerCase();
-                  if (removedNames.has(mNome)) continue;
-
-                  reqM[mid] = { 
-                    nome: (r as any).MateriaPrima?.nome || "Ingrediente", 
-                    qtd: (reqM[mid]?.qtd ?? 0) + ((r.quantidade ?? 0) * qtd)
-                  };
-                }
-              }
-            }
-          }
-        } else {
-          // Direct Product Item
-          const isUnique = item.is_unique;
-          if (isUnique) {
-            reqP[item.id] = { nome: item.Nome, qtd: (reqP[item.id]?.qtd ?? 0) + qtd };
-          } else {
-            const { data: pm } = await supabase.from("ProduxMateria")
-              .select("id_materia, quantidade, MateriaPrima:id_materia(nome)")
-              .eq("id_produto", item.id);
-            
-            if (!pm || pm.length === 0) {
-              reqP[item.id] = { nome: item.Nome, qtd: (reqP[item.id]?.qtd ?? 0) + qtd };
-            } else {
-              for (const r of pm ?? []) {
-                const mid = Number(r.id_materia);
-                const mNome = ((r as any).MateriaPrima?.nome || "").toLowerCase();
-                if (removedNames.has(mNome)) continue;
-
-                reqM[mid] = { 
-                  nome: (r as any).MateriaPrima?.nome || "Ingrediente", 
-                  qtd: (reqM[mid]?.qtd ?? 0) + ((r.quantidade ?? 0) * qtd)
-                };
-              }
-            }
-          }
-        }
-      }
-
-      // 2. Validate Stock
-      const { data: estoque } = await supabase.from("Estoque").select("id, id_materia, id_produto, quantidade").eq("id_empresa", empresaId);
-      const saldosM: Record<number, number> = {};
-      const saldosP: Record<number, number> = {};
-      (estoque ?? []).forEach(e => {
-        if (e.id_materia) saldosM[e.id_materia] = (saldosM[e.id_materia] ?? 0) + (e.quantidade ?? 0);
-        if (e.id_produto) saldosP[e.id_produto] = (saldosP[e.id_produto] ?? 0) + (e.quantidade ?? 0);
+      // Chamada sigilosa à Edge Function
+      const { data, error } = await supabase.functions.invoke('quick-task', {
+          body: { empresaId, carrinho: payload }
       });
 
-      const erros: string[] = [];
-      Object.entries(reqM).forEach(([id, r]) => { if ((saldosM[Number(id)] ?? 0) < r.qtd) erros.push(`${r.nome}: falta ${(r.qtd - (saldosM[Number(id)] ?? 0)).toFixed(2)}`); });
-      Object.entries(reqP).forEach(([id, r]) => { if ((saldosP[Number(id)] ?? 0) < r.qtd) erros.push(`${r.nome}: falta ${(r.qtd - (saldosP[Number(id)] ?? 0)).toFixed(0)}`); });
-      if (erros.length > 0) throw new Error("Estoque insuficiente:\n" + erros.join(", "));
-
-      // 3. Register Sale & Pedidos & Modificacoes
-      const { data: venda, error: vErr } = await supabase.from("Venda").insert({ id_empresa: empresaId }).select().single();
-      if (vErr) throw vErr;
-
-      for (const row of carrinho) {
-        // We process each unit individually to link mods correctly
-        for (let i = 0; i < row.qtd; i++) {
-          const payload: any = { id_venda: venda.id, id_empresa: empresaId };
-          if (row.item.type === "cardapio") payload.id_cardapio = row.item.id;
-          else payload.id_produto = row.item.id;
-
-          const { data: ped, error: pErr } = await supabase.from("Pedido")
-            .insert(payload)
-            .select().single();
-          if (pErr) throw pErr;
-
-          if (row.mods.length > 0) {
-            const modsToInsert = row.mods.map(m => ({
-              id_pedido: ped.id,
-              id_materia: m.id_materia,
-              tipo: m.tipo,
-              id_empresa: empresaId
-            }));
-            const { error: mErr } = await supabase.from("PedidoModificacao").insert(modsToInsert);
-            if (mErr) throw new Error(`Erro ao gravar modificações do pedido: ${mErr.message}`);
-          }
-        }
+      if (error) {
+          // Tentar extrair a mensagem real da resposta da Edge Function
+          let msg = "Erro ao comunicar com o servidor.";
+          try {
+            const body = await error?.context?.json?.();
+            if (body?.error) msg = body.error;
+          } catch { /* ignora erros de parsing */ }
+          throw new Error(msg);
+      }
+      
+      if (data && data.error) {
+          throw new Error(data.error);
       }
 
-      toast.info("Resumo da saída planejada: " + [
-        ...Object.values(reqM).map(m => `${m.qtd.toFixed(2)}x ${m.nome}`),
-        ...Object.values(reqP).map(p => `${p.qtd}x ${p.nome}`)
-      ].join(", "));
-
-      // 4. Perform Deductions
-      for (const [id, r] of Object.entries(reqM)) {
-        if (r.qtd <= 0) continue; // DO NOT update if amount is zero
-        const mid = Number(id);
-        const row = (estoque ?? []).find(e => e.id_materia === mid);
-        if (row) {
-          const { error: err } = await supabase.from("Estoque").update({ quantidade: (row.quantidade ?? 0) - r.qtd }).eq("id", row.id);
-          if (err) throw new Error(`Erro ao atualizar estoque de ${r.nome}: ${err.message}`);
-        } else {
-          await supabase.from("Estoque").insert({ id_materia: mid, quantidade: -r.qtd, id_empresa: Number(empresaId) } as any);
-        }
-      }
-      for (const [id, r] of Object.entries(reqP)) {
-        if (r.qtd <= 0) continue;
-        const pid = Number(id);
-        const row = (estoque ?? []).find(e => e.id_produto === pid);
-        if (row) {
-          const { error: err } = await supabase.from("Estoque").update({ quantidade: (row.quantidade ?? 0) - r.qtd }).eq("id", row.id);
-          if (err) throw new Error(`Erro ao atualizar estoque de ${r.nome}: ${err.message}`);
-        } else {
-          await supabase.from("Estoque").insert({ id_produto: pid, quantidade: -r.qtd, id_empresa: Number(empresaId) } as any);
-        }
-      }
-
-      toast.success(`Venda #${venda.id} registrada com sucesso`);
+      toast.success(data?.message || `Venda registrada com sucesso`);
       clear();
     } catch (err: any) {
       toast.error(err.message ?? "Erro ao registrar venda");

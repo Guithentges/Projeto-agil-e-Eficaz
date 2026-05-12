@@ -82,8 +82,9 @@ const Produtos = () => {
   };
 
   const remove = async (id: number) => {
-    await supabase.from("ProduxMateria").delete().eq("id_produto", id);
-    const { error } = await supabase.from("Produtos").delete().eq("id", id);
+    if (!empresaId) return;
+    await supabase.from("ProduxMateria").delete().eq("id_produto", id).eq("id_empresa", empresaId);
+    const { error } = await supabase.from("Produtos").delete().eq("id", id).eq("id_empresa", empresaId);
     if (error) return toast.error(error.message);
     load();
   };
@@ -109,7 +110,8 @@ const Produtos = () => {
   };
 
   const removeMateria = async (id: number, idProduto: number) => {
-    await supabase.from("ProduxMateria").delete().eq("id", id);
+    if (!empresaId) return;
+    await supabase.from("ProduxMateria").delete().eq("id", id).eq("id_empresa", empresaId);
     await recalcCusto(idProduto);
     load();
   };
@@ -120,7 +122,7 @@ const Produtos = () => {
       const unit = r.MateriaPrima?.Custo ?? 0;
       return s + unit * (r.quantidade ?? 0);
     }, 0);
-    await supabase.from("Produtos").update({ Custo: custo }).eq("id", idProduto);
+    await supabase.from("Produtos").update({ Custo: custo }).eq("id", idProduto).eq("id_empresa", empresaId);
   };
 
     if (loading) {

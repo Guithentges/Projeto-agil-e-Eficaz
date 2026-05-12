@@ -49,7 +49,7 @@ const navGroups: NavGroup[] = [
     icon: DollarSign,
     items: [
       { to: "/estoque", label: "Estoque", icon: Boxes, roles: ["admin", "gerente"] },
-      { to: "/gastos", label: "Gastos", icon: Wallet, roles: ["admin", "gerente"] },
+      { to: "/gastos", label: "Gastos", icon: Wallet, roles: ["admin"] },
     ],
   },
   {
@@ -217,7 +217,7 @@ const MobileSidebarGroup = ({
 };
 
 export const AppLayout = () => {
-  const { signOut, empresaNome, user, roles } = useAuth();
+  const { signOut, empresaNome, user, roles, profileLoaded, empresaId } = useAuth();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -225,6 +225,28 @@ export const AppLayout = () => {
     await signOut();
     navigate("/auth");
   };
+
+  // Perfil carregado mas sem empresa vinculada = trigger falhou silenciosamente
+  if (profileLoaded && !empresaId) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-6">
+        <div className="text-center space-y-4 max-w-sm">
+          <div className="text-4xl">⚠️</div>
+          <h2 className="text-xl font-semibold">Configuração incompleta</h2>
+          <p className="text-muted-foreground text-sm">
+            Sua conta foi criada, mas a empresa não foi vinculada corretamente.
+            Por favor, entre em contato com o suporte ou tente criar uma nova conta.
+          </p>
+          <button
+            onClick={handleLogout}
+            className="text-sm text-primary underline"
+          >
+            Sair e tentar novamente
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const userRoles = roles as string[];
 

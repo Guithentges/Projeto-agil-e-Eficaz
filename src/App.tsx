@@ -40,7 +40,7 @@ const App = () => (
               <Route path="/materias" element={<ProtectedRoute allow={["admin", "gerente"]}><MateriaPrima /></ProtectedRoute>} />
               <Route path="/estoque" element={<ProtectedRoute allow={["admin", "gerente"]}><Estoque /></ProtectedRoute>} />
               <Route path="/categorias" element={<ProtectedRoute allow={["admin", "gerente"]}><Categorias /></ProtectedRoute>} />
-              <Route path="/gastos" element={<ProtectedRoute allow={["admin", "gerente"]}><Gastos /></ProtectedRoute>} />
+              <Route path="/gastos" element={<ProtectedRoute allow={["admin"]}><Gastos /></ProtectedRoute>} />
               <Route path="/empresa" element={<ProtectedRoute allow={["admin"]}><Empresa /></ProtectedRoute>} />
               <Route path="/telegram" element={<ProtectedRoute allow={["admin"]}><Telegram /></ProtectedRoute>} />
             </Route>

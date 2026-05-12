@@ -7,6 +7,7 @@ interface AuthContextValue {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  profileLoaded: boolean;
   empresaId: number | null;
   empresaNome: string | null;
   roles: AppRole[];
@@ -20,6 +21,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [profileLoaded, setProfileLoaded] = useState(false);
   const [empresaId, setEmpresaId] = useState<number | null>(null);
   const [empresaNome, setEmpresaNome] = useState<string | null>(null);
   const [roles, setRoles] = useState<AppRole[]>([]);
@@ -36,6 +38,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const { data: r } = await supabase.from("user_roles").select("role").eq("user_id", uid);
     setRoles(((r ?? []) as any[]).map((x) => x.role as AppRole));
+    setProfileLoaded(true);
   };
 
   useEffect(() => {
@@ -48,6 +51,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setEmpresaId(null);
         setEmpresaNome(null);
         setRoles([]);
+        setProfileLoaded(false);
       }
     });
 
@@ -65,7 +69,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const refreshProfile = async () => { if (user) await loadProfile(user.id); };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, empresaId, empresaNome, roles, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ user, session, loading, profileLoaded, empresaId, empresaNome, roles, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );

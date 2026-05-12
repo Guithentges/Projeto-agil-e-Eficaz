@@ -100,7 +100,8 @@ const Pedidos = () => {
   }, [empresaId]);
 
   const marcarComoEntregue = async (idVenda: number) => {
-    const { error } = await supabase.from("Venda").update({ entregue: true }).eq("id", idVenda);
+    if (!empresaId) return;
+    const { error } = await supabase.from("Venda").update({ entregue: true }).eq("id", idVenda).eq("id_empresa", empresaId);
     if (error) {
       toast.error("Erro ao marcar pedido: " + error.message);
     } else {
