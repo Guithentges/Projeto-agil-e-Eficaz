@@ -3,6 +3,8 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 
+import { cloudflare } from "@cloudflare/vite-plugin";
+
 export default defineConfig({
   server: {
     host: "::",
@@ -13,10 +15,7 @@ export default defineConfig({
   },
   // Mantemos o plugin da Lovable apenas se não quebrar o build, 
   // mas o segredo é o formato do objeto abaixo:
-  plugins: [
-    react(),
-    componentTagger(),
-  ],
+  plugins: [react(), componentTagger(), cloudflare()],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
