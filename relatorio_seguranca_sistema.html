@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatório de Auditoria e Segurança do Sistema</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 0 20px;
+            background-color: #f9f9f9;
+        }
+        .container {
+            background-color: #fff;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            border: 1px solid #eee;
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        h2 {
+            color: #2980b9;
+            font-size: 1.4em;
+            margin-top: 30px;
+        }
+        .section {
+            margin-bottom: 30px;
+        }
+        .problem {
+            background-color: #fff5f5;
+            border-left: 4px solid #e53e3e;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .solution {
+            background-color: #f0fff4;
+            border-left: 4px solid #38a169;
+            padding: 15px;
+        }
+        strong {
+            color: #2d3748;
+        }
+        .footer {
+            margin-top: 50px;
+            font-size: 0.85em;
+            color: #718096;
+            text-align: center;
+            border-top: 1px solid #edf2f7;
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Relatório de Segurança e Auditoria</h1>
+        <p>Este documento descreve as vulnerabilidades identificadas e as estratégias de mitigação recomendadas para o fortalecimento do sistema de PDV e Gestão de Vendas.</p>
+
+        <div class="section">
+            <h2>1 & 2. Centralização da Lógica de Negócio no Backend</h2>
+            <div class="problem">
+                <strong>O Problema:</strong> O frontend (React) está recebendo a responsabilidade de calcular o saldo de estoque e decidir como os insumos de um combo devem ser debitados. O sistema está aceitando o valor calculado na máquina do cliente, o que permite que qualquer usuário intercepte a requisição e envie saldos falsos ou negativos.
+            </div>
+            <div class="solution">
+                <strong>A Solução:</strong> Transfira toda a autoridade matemática para o servidor. O frontend em React deve enviar apenas a "intenção" da ação (exemplo: requisição informando "Vender 1 Combo X"). O cálculo de quais ingredientes compõem esse prato e a subtração do estoque devem ocorrer exclusivamente em rotinas de backend, utilizando Supabase Edge Functions ou RPCs (Remote Procedure Calls) diretamente no PostgreSQL. Dessa forma, o servidor processa a regra de negócios proprietária de forma invisível e segura, imune a manipulações externas.
+            </div>
+        </div>
+
+        <div class="section" style="margin-top: 200px;";>
+            <h2>3. Prevenção de Injeção de Scripts (XSS)</h2>
+            <div class="problem">
+                <strong>O Problema:</strong> A interface utiliza <code>dangerouslySetInnerHTML</code> para renderizar gráficos. Como administradores inserem textos livres (como descrições de produtos), a falta de higienização cria um vetor para ataques de Cross-Site Scripting (XSS), permitindo que códigos maliciosos afetem outros gestores.
+            </div>
+            <div class="solution">
+                <strong>A Solução:</strong> Implemente uma camada dupla de proteção. Primeiro, faça a sanitização da saída de dados utilizando bibliotecas robustas como o <strong>DOMPurify</strong> antes de renderizar qualquer conteúdo via <code>dangerouslySetInnerHTML</code>, garantindo a remoção de tags <code>&lt;script&gt;</code> e atributos nocivos. Em paralelo, aplique validação rigorosa de entrada de dados no momento do cadastro utilizando esquemas como o <strong>Zod</strong> para garantir que caracteres HTML não autorizados sejam rejeitados.
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>4. Implementação de Row Level Security (RLS)</h2>
+            <div class="problem">
+                <strong>O Problema:</strong> O controle de acesso está sendo feito apenas ocultando botões na interface visual do React. Como não há validação no servidor, qualquer usuário autenticado pode requisitar os dados confidenciais diretamente à API.
+            </div>
+            <div class="solution">
+                <strong>A Solução:</strong> É imperativo habilitar e configurar as políticas de <strong>Row Level Security (RLS)</strong> diretamente nas tabelas do Supabase. Crie políticas baseadas em cargos (RBAC) que inspecionem o token do usuário (<code>auth.uid()</code>) e seu nível de permissão no momento de cada requisição. Assim, o próprio banco de dados negará operações não autorizadas de leitura ou escrita.
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>5. Blindagem da Cadeia de Suprimentos</h2>
+            <div class="problem">
+                <strong>O Problema:</strong> O projeto possui vulnerabilidades ativas em bibliotecas NPM de terceiros (incluindo severidade alta no ambiente Vite), o que facilita a execução de código indesejado e compromete a postura de segurança geral da aplicação.
+            </div>
+            <div class="solution">
+                <strong>A Solução:</strong> Execute auditorias regulares (<code>npm audit</code>) e utilize <code>npm audit fix</code> para resolver vulnerabilidades automáticas. Para dependências críticas, atualize manualmente as versões no <code>package.json</code> para os patches mais recentes. Recomenda-se o monitoramento contínuo para evitar a defasagem de segurança.
+            </div>
+        </div>
+
+        <div class="footer">
+            Relatório gerado automaticamente para fins de auditoria técnica.<br>
+            Data: 13 de Maio de 2026
+        </div>
+    </div>
+</body>
+</html>

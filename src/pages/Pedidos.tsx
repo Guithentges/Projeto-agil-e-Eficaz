@@ -35,7 +35,7 @@ const Pedidos = () => {
     setVendas(v ?? []);
     
     const { data: p } = await supabase.from("Pedido")
-      .select("*, Cardapio:id_cardapio(Nome, Valor), Produtos:id_produto(Nome, Preco_venda, is_unique), PedidoModificacao(tipo, MateriaPrima:id_materia(nome))")
+      .select("*, Cardapio:id_cardapio(Nome, Valor), Produtos:id_produto(Nome, Preco_venda, is_unique), PedidoModificacao(tipo, id_produx_card, MateriaPrima:id_materia(nome))")
       .eq("id_empresa", empresaId);
       
     const map: Record<number, any[]> = {};
@@ -47,6 +47,7 @@ const Pedidos = () => {
     setPedidosPorVenda(map);
 
     const { data: pc } = await supabase.from("ProduxCard").select(`
+      id,
       id_cardapio, 
       Produtos:id_produto(
         Nome,
@@ -67,6 +68,7 @@ const Pedidos = () => {
       
       if (prodInfo.Nome) {
         compMap[x.id_cardapio].push({
+          id: x.id,
           nome: prodInfo.Nome,
           materias: materias
         });
@@ -178,7 +180,7 @@ const Pedidos = () => {
                       <div className="p-4 flex-1 grid grid-cols-2 gap-x-4 gap-y-3 content-start items-start">
                         {(() => {
                            const groupedPeds = peds.reduce((acc: any[], p: any) => {
-                               const getModStr = (m: any) => `${m.tipo}-${m.MateriaPrima?.nome}`;
+                               const getModStr = (m: any) => `${m.tipo}-${m.MateriaPrima?.nome}-${m.id_produx_card || '0'}`;
                                const modsStr = (p.PedidoModificacao || []).map(getModStr).sort().join('|');
                                const key = `${p.id_cardapio || 'null'}-${p.id_produto || 'null'}-${modsStr}`;
                                
@@ -209,7 +211,7 @@ const Pedidos = () => {
                                       {prod.materias && prod.materias.length > 0 && (
                                          <div className="mt-1 space-y-1">
                                            {prod.materias.map((mat: any, i: number) => {
-                                              const modToRemove = p.PedidoModificacao?.find((mod: any) => mod.tipo === 'REMOVER' && mod.MateriaPrima?.nome === mat.nome);
+                                              const modToRemove = p.PedidoModificacao?.find((mod: any) => mod.tipo === 'REMOVER' && mod.MateriaPrima?.nome === mat.nome && (mod.id_produx_card === prod.id || (!mod.id_produx_card && !prod.id)));
                                               const isRemoved = !!modToRemove;
                                               return (
                                                   <div key={i} className={`relative pl-4 border-l border-border/40 text-[11px] font-medium flex items-center ${isRemoved ? 'text-destructive opacity-80' : 'text-muted-foreground'}`}>

@@ -264,16 +264,16 @@ export const AppLayout = () => {
       <aside className="hidden md:flex flex-col border-r border-sidebar-border bg-sidebar fixed left-0 top-0 h-full z-40 w-[65px] hover:w-64 transition-all duration-300 ease-in-out group overflow-hidden shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
         <div className="h-[65px] flex items-center px-4 border-b border-sidebar-border w-64 flex-shrink-0">
           <div className="flex items-center gap-3 w-full">
-             <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 text-primary">
-               <Store className="h-4 w-4" />
-             </div>
-             <div className="flex flex-col opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap overflow-hidden">
-                <span className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground/70 leading-tight">Empresa</span>
-                <span className="font-semibold text-sidebar-foreground truncate leading-tight text-sm">{empresaNome ?? "—"}</span>
-             </div>
+            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 text-primary">
+              <Store className="h-4 w-4" />
+            </div>
+            <div className="flex flex-col opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap overflow-hidden">
+              <span className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground/70 leading-tight">Empresa</span>
+              <span className="font-semibold text-sidebar-foreground truncate leading-tight text-sm">{empresaNome ?? "—"}</span>
+            </div>
           </div>
         </div>
-        
+
         <nav className="flex-1 py-4 space-y-1 overflow-y-auto overflow-x-hidden flex flex-col items-start px-3">
           {/* Standalone top items (Dashboard) */}
           {topItems.map((item) => (
@@ -304,22 +304,22 @@ export const AppLayout = () => {
             <SidebarLink key={item.to} item={item} />
           ))}
         </nav>
-        
+
         <div className="p-3 border-t border-sidebar-border w-64 flex-shrink-0 bg-sidebar/50">
-           <div className="flex items-center justify-start group-hover:justify-start">
-             {/* Collapsed View Logout */}
-             <Button variant="ghost" size="icon" className="w-[40px] h-[40px] group-hover:hidden flex-shrink-0 ml-[1px]" onClick={handleLogout} title="Sair do Sistema">
-                <LogOut className="h-[18px] w-[18px] text-muted-foreground" />
-             </Button>
-             
-             {/* Expanded View Logout */}
-             <div className="hidden group-hover:flex flex-col flex-1 w-full opacity-0 group-hover:opacity-100 transition-opacity px-1">
-               <div className="text-[11px] text-muted-foreground/80 truncate mb-2 font-medium">{user?.email}</div>
-               <Button variant="outline" size="sm" className="w-full bg-background" onClick={handleLogout}>
-                 <LogOut className="h-4 w-4 mr-2" /> Sair do Sistema
-               </Button>
-             </div>
-           </div>
+          <div className="flex items-center justify-start group-hover:justify-start">
+            {/* Collapsed View Logout */}
+            <Button variant="ghost" size="icon" className="w-[40px] h-[40px] group-hover:hidden flex-shrink-0 ml-[1px]" onClick={handleLogout} title="Sair do Sistema">
+              <LogOut className="h-[18px] w-[18px] text-muted-foreground" />
+            </Button>
+
+            {/* Expanded View Logout */}
+            <div className="hidden group-hover:flex flex-col flex-1 w-full opacity-0 group-hover:opacity-100 transition-opacity px-1">
+              <div className="text-[11px] text-muted-foreground/80 truncate mb-2 font-medium">{user?.email}</div>
+              <Button variant="outline" size="sm" className="w-full bg-background" onClick={handleLogout}>
+                <LogOut className="h-4 w-4 mr-2" /> Sair do Sistema
+              </Button>
+            </div>
+          </div>
         </div>
       </aside>
 

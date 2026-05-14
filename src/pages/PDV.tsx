@@ -84,54 +84,82 @@ const PDV = () => {
     setCustItem(cartItem);
     let mats: any[] = [];
 
-    // Fetch materials linked to the products of this menu item
+    console.log("Abrindo customizador para:", cartItem.item.Nome, "ID:", cartItem.item.id);
+
     if (cartItem.item.type === "cardapio") {
-      const { data: pc } = await supabase.from("ProduxCard")
-        .select("id_produto")
+      // Busca os produtos do combo com seus IDs únicos de instância
+      const { data: pc, error: pcErr } = await supabase.from("ProduxCard")
+        .select("id, id_produto, Produtos:id_produto(Nome)")
         .eq("id_cardapio", cartItem.item.id);
       
+      if (pcErr) console.error("Erro ao buscar produtos do combo:", pcErr);
+      console.log("Produtos encontrados no combo:", pc);
+
       if (pc && pc.length > 0) {
         const pids = pc.map(p => p.id_produto);
-        const { data: pm } = await supabase.from("ProduxMateria")
-          .select("id_materia, MateriaPrima:id_materia(nome)")
+        const { data: pm, error: pmErr } = await supabase.from("ProduxMateria")
+          .select("id_materia, id_produto, MateriaPrima:id_materia(nome)")
           .in("id_produto", pids);
         
-        mats = (pm ?? []).map(m => ({
-          id: m.id_materia,
-          nome: (m as any).MateriaPrima?.nome || "Ingrediente"
-        }));
+        if (pmErr) console.error("Erro ao buscar matérias-primas:", pmErr);
+        console.log("Insumos encontrados para estes produtos:", pm);
+
+        // Mapeamos os materiais para cada INSTÂNCIA do produto no combo
+        mats = pc.flatMap((instance, index) => {
+          const productMats = (pm ?? []).filter(m => m.id_produto === instance.id_produto);
+          
+          // Se o produto não tiver insumos, criamos uma entrada vazia apenas para mostrar o título
+          if (productMats.length === 0) {
+             return [{
+                id: -1, // ID fictício para indicar "sem insumos"
+                instance_id: instance.id,
+                id_produto: instance.id_produto,
+                produto_nome: `${(instance as any).Produtos?.Nome || "Produto"} #${index + 1}`,
+                nome: ""
+             }];
+          }
+
+          return productMats.map(m => ({
+            id: m.id_materia,
+            instance_id: instance.id,
+            id_produto: m.id_produto,
+            produto_nome: `${(instance as any).Produtos?.Nome || "Produto"} #${index + 1}`,
+            nome: (m as any).MateriaPrima?.nome || "Ingrediente"
+          }));
+        });
       }
     } else {
       const { data: pm } = await supabase.from("ProduxMateria")
-        .select("id_materia, MateriaPrima:id_materia(nome)")
+        .select("id_materia, id_produto, MateriaPrima:id_materia(nome)")
         .eq("id_produto", cartItem.item.id);
       
       mats = (pm ?? []).map(m => ({
         id: m.id_materia,
+        instance_id: 0,
+        id_produto: m.id_produto,
+        produto_nome: cartItem.item.Nome,
         nome: (m as any).MateriaPrima?.nome || "Ingrediente"
       }));
     }
 
-    // Group by Name to ensure one toggle affects all instances in a combo
-    const groupedByName = Array.from(new Map(mats.map(m => [m.nome.toLowerCase(), m])).values());
-    setAvailableMats(groupedByName);
+    setAvailableMats(mats);
   };
 
-  const toggleMod = (item: CartItem, matId: number, nome: string) => {
-    // We toggle by NAME to affect all IDs of that ingredient in a combo
-    const n = nome.toLowerCase();
-    const alreadyRemoved = item.mods.some(m => m.nome.toLowerCase() === n && m.tipo === 'REMOVER');
+  const toggleMod = (item: CartItem, matId: number, nome: string, instanceId: number, prodName: string) => {
+    // Agora a chave de unicidade é matId + instanceId
+    const isRemoved = item.mods.some(m => m.id_materia === matId && (m as any).instance_id === instanceId);
     
     let newMods;
-    if (alreadyRemoved) {
-      newMods = item.mods.filter(m => m.nome.toLowerCase() !== n);
+    if (isRemoved) {
+      newMods = item.mods.filter(m => !(m.id_materia === matId && (m as any).instance_id === instanceId));
     } else {
-      // Find all IDs for this specific name in availableMats to record them all
-      // Actually, just storing the name is enough for the filter, but we need IDs for the DB table
-      // We'll store all current instance IDs for that name
-      const sameNameIds = availableMats.filter(am => am.nome.toLowerCase() === n).map(am => am.id);
-      const modsToAdd = sameNameIds.map(id => ({ id_materia: id, nome: nome, tipo: 'REMOVER' as const }));
-      newMods = [...item.mods, ...modsToAdd];
+      newMods = [...(item.mods || []), { 
+        id_materia: matId, 
+        nome: nome, 
+        tipo: 'REMOVER' as const, 
+        instance_id: instanceId || 0, // Garante 0 para produtos avulsos
+        produto_nome: prodName 
+      }];
     }
 
     // Split the item if it has more than 1 quantity to customize only one
@@ -153,36 +181,26 @@ const PDV = () => {
     if (!empresaId || itensCount === 0) return;
     setBusy(true);
     try {
-      // Payload simplificado para não expor a lógica de negócio no frontend
+      // Prepara o carrinho com as instâncias para o RPC
       const payload = carrinho.map(row => ({
           id: row.item.id,
-          type: row.item.type, // 'cardapio' or 'produto'
+          type: row.item.type,
           qtd: row.qtd,
-          insumos_removidos: row.mods.filter(m => m.tipo === 'REMOVER').map(m => m.id_materia)
+          mods: row.mods // Envia o objeto completo com instance_id
       }));
 
-      // Chamada sigilosa à Edge Function
-      const { data, error } = await supabase.functions.invoke('quick-task', {
-          body: { empresaId, carrinho: payload }
+      // Chamada atômica ao RPC no banco de dados
+      const { data, error } = await supabase.rpc('processar_venda_v2', {
+          p_empresa_id: empresaId,
+          p_carrinho: payload
       });
 
-      if (error) {
-          // Tentar extrair a mensagem real da resposta da Edge Function
-          let msg = "Erro ao comunicar com o servidor.";
-          try {
-            const body = await error?.context?.json?.();
-            if (body?.error) msg = body.error;
-          } catch { /* ignora erros de parsing */ }
-          throw new Error(msg);
-      }
-      
-      if (data && data.error) {
-          throw new Error(data.error);
-      }
+      if (error) throw error;
 
-      toast.success(data?.message || `Venda registrada com sucesso`);
+      toast.success(`Venda #${data.venda_id} registrada com sucesso`);
       clear();
     } catch (err: any) {
+      console.error(err);
       toast.error(err.message ?? "Erro ao registrar venda");
     } finally {
       setBusy(false);
@@ -312,8 +330,13 @@ const PDV = () => {
                   <div className="text-xs text-muted-foreground">{fmt(row.item.Valor ?? 0)}</div>
                   {row.mods.length > 0 && (
                     <div className="mt-1 flex flex-wrap gap-1">
-                      {row.mods.map((m, idx) => (
-                        <span key={idx} className="text-[10px] bg-destructive/10 text-destructive px-1 rounded uppercase font-bold">
+                      {row.mods.map((m: any, idx) => (
+                        <span key={idx} className="text-[10px] bg-destructive/10 text-destructive px-1.5 py-0.5 rounded uppercase font-bold flex items-center gap-1">
+                          {row.item.type === 'cardapio' && m.produto_nome && (
+                            <span className="opacity-60 font-medium lowercase">
+                              {m.produto_nome}:
+                            </span>
+                          )}
                           sem {m.nome}
                         </span>
                       ))}
@@ -356,24 +379,51 @@ const PDV = () => {
           <DialogHeader>
             <DialogTitle>Customizar {custItem?.item.Nome}</DialogTitle>
           </DialogHeader>
-          <div className="py-4 space-y-4">
-            <div className="text-sm font-medium text-muted-foreground">O que retirar?</div>
-            <div className="grid grid-cols-2 gap-2">
-              {availableMats.map((m) => {
-                const isRemoved = custItem?.mods.some(mod => mod.id_materia === m.id && mod.tipo === 'REMOVER');
-                return (
-                  <Button
-                    key={m.id}
-                    variant={isRemoved ? "destructive" : "outline"}
-                    className="justify-start text-xs h-9"
-                    onClick={() => custItem && toggleMod(custItem, m.id, m.nome)}
-                  >
-                    {isRemoved ? <X className="h-3 w-3 mr-2" /> : <Plus className="h-3 w-3 mr-2 text-muted-foreground" />}
-                    {m.nome}
-                  </Button>
-                );
-              })}
-            </div>
+          <div className="py-4 space-y-6 max-h-[60vh] overflow-y-auto pr-2">
+            {/* Agrupamento por Instância para Combos */}
+            {Array.from(new Set(availableMats.map(m => m.instance_id))).map(instanceId => {
+              const instMats = availableMats.filter(m => m.instance_id === instanceId);
+              const pName = instMats[0]?.produto_nome || "Produto";
+              
+              return (
+                <div key={instanceId} className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <div className="h-px flex-1 bg-border" />
+                    <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">{pName}</span>
+                    <div className="h-px flex-1 bg-border" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {instMats.map((m) => {
+                      if (m.id === -1) {
+                        return (
+                          <p key={`empty-${m.instance_id}`} className="col-span-2 text-[10px] text-muted-foreground italic text-center py-2">
+                            Sem ingredientes para remover.
+                          </p>
+                        );
+                      }
+                      const isRemoved = custItem?.mods.some(mod => mod.id_materia === m.id && (mod as any).instance_id === m.instance_id);
+                      return (
+                        <Button
+                          key={`${m.instance_id}-${m.id}`}
+                          variant={isRemoved ? "destructive" : "outline"}
+                          className="justify-start text-xs h-9 overflow-hidden"
+                          onClick={() => custItem && toggleMod(custItem, m.id, m.nome, m.instance_id, pName)}
+                        >
+                          {isRemoved ? <X className="h-3 w-3 mr-2" /> : <Plus className="h-3 w-3 mr-2 text-muted-foreground" />}
+                          <span className="truncate">{m.nome}</span>
+                        </Button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+            
+            {availableMats.length === 0 && (
+              <p className="text-center text-sm text-muted-foreground py-4">
+                Nenhum ingrediente configurado para este item.
+              </p>
+            )}
           </div>
           <DialogFooter>
             <Button onClick={() => setCustItem(null)}>Concluir</Button>
