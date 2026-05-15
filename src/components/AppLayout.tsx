@@ -11,7 +11,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 
-/* ── Navigation item type ── */
+/* ── Types ── */
 type NavItem = {
   to: string;
   label: string;
@@ -19,7 +19,6 @@ type NavItem = {
   roles: readonly string[];
 };
 
-/* ── Grouped navigation structure ── */
 type NavGroup = {
   id: string;
   label: string;
@@ -81,7 +80,7 @@ const SidebarLink = ({ item, isGroupChild = false }: { item: NavItem; isGroupChi
         "flex items-center gap-4 rounded-md text-sm transition-colors w-full min-w-[220px]",
         isGroupChild ? "px-[11px] py-2 pl-[35px]" : "px-[11px] py-2.5",
         isActive
-          ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+          ? "bg-primary/10 text-primary font-medium"
           : "text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground"
       )
     }
@@ -114,7 +113,7 @@ const MobileSidebarLink = ({ item, isGroupChild = false, onNavigate }: { item: N
   </NavLink>
 );
 
-/* ── Desktop Collapsible group (MODIFICADO) ── */
+/* ── Desktop Collapsible group ── */
 const SidebarGroup = ({
   group,
   userRoles,
@@ -126,10 +125,11 @@ const SidebarGroup = ({
 }) => {
   const location = useLocation();
   const visibleItems = filterByRoles(group.items, userRoles);
+  
+  // Lógica para detectar se algum filho está ativo
   const isAnyActive = visibleItems.some((item) => location.pathname === item.to);
   const [open, setOpen] = useState(isAnyActive);
 
-  // Sincroniza o fechamento dos filhos com o recolhimento da sidebar
   useEffect(() => {
     if (!isSidebarHovered) {
       setOpen(false);
@@ -146,18 +146,21 @@ const SidebarGroup = ({
         <button
           className={cn(
             "flex items-center gap-4 px-[11px] py-2.5 rounded-md text-sm transition-colors w-full min-w-[220px]",
-            "text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground",
-            isAnyActive && "text-sidebar-accent-foreground"
+            // Se algum filho estiver ativo, o PAI ganha a cor primary no texto
+            isAnyActive 
+              ? "text-primary font-medium" 
+              : "text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground"
           )}
         >
-          <group.icon className="h-[18px] w-[18px] flex-shrink-0" />
-          <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap flex-1 text-left font-medium">
+          <group.icon className={cn("h-[18px] w-[18px] flex-shrink-0", isAnyActive && "text-primary")} />
+          <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap flex-1 text-left">
             {group.label}
           </span>
           <ChevronDown
             className={cn(
               "h-4 w-4 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-all duration-300",
-              open && "rotate-180"
+              open && "rotate-180",
+              isAnyActive && "text-primary"
             )}
           />
         </button>
@@ -196,18 +199,20 @@ const MobileSidebarGroup = ({
         <button
           className={cn(
             "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors w-full",
-            "text-foreground/80 hover:bg-muted/80 hover:text-foreground",
-            isAnyActive && "text-primary font-medium"
+            isAnyActive 
+              ? "text-primary font-medium" 
+              : "text-foreground/80 hover:bg-muted/80 hover:text-foreground"
           )}
         >
-          <group.icon className="h-[18px] w-[18px] flex-shrink-0" />
+          <group.icon className={cn("h-[18px] w-[18px] flex-shrink-0", isAnyActive && "text-primary")} />
           <span className="whitespace-nowrap flex-1 text-left font-medium">
             {group.label}
           </span>
           <ChevronDown
             className={cn(
               "h-4 w-4 flex-shrink-0 transition-transform duration-200",
-              open && "rotate-180"
+              open && "rotate-180",
+              isAnyActive && "text-primary"
             )}
           />
         </button>
@@ -227,8 +232,6 @@ export const AppLayout = () => {
   const { signOut, empresaNome, user, roles, profileLoaded, empresaId } = useAuth();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
-  
-  // ESTADO PARA MONITORAR HOVER NA SIDEBAR
   const [isSidebarHovered, setIsSidebarHovered] = useState(false);
 
   const handleLogout = async () => {
@@ -260,7 +263,6 @@ export const AppLayout = () => {
 
   return (
     <div className="flex min-h-[100dvh] w-full bg-background relative">
-      {/* DESKTOP Sidebar */}
       <aside 
         onMouseEnter={() => setIsSidebarHovered(true)}
         onMouseLeave={() => setIsSidebarHovered(false)}
@@ -327,7 +329,6 @@ export const AppLayout = () => {
 
       <div className="hidden md:block w-[65px] flex-shrink-0" />
 
-      {/* MOBILE Sidebar */}
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
         <SheetContent side="left" className="w-[280px] p-0 flex flex-col bg-sidebar border-r border-sidebar-border">
           <SheetTitle className="sr-only">Menu de navegação</SheetTitle>
@@ -378,7 +379,6 @@ export const AppLayout = () => {
         </SheetContent>
       </Sheet>
 
-      {/* Main content area */}
       <div className="flex-1 flex flex-col min-w-0 bg-secondary/10">
         <header className="md:hidden flex items-center justify-between px-4 py-3 border-b border-border bg-background sticky top-0 z-30">
           <div className="flex items-center gap-3">
