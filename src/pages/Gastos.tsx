@@ -2,12 +2,25 @@ import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/CurrencyInput";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useSubmitLock } from "@/hooks/useSubmitLock";
+import { isBulkUnit, quantityInputLabel, quantityInputPlaceholder, toBaseQuantity } from "@/lib/unidade-medida";
 import { toast } from "sonner";
 import { Plus, Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const fmt = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 const fmtDate = (d: string) => new Date(d).toLocaleDateString("pt-BR");
@@ -18,15 +31,15 @@ const Gastos = () => {
   const [categorias, setCategorias] = useState<any[]>([]);
   const [materias, setMaterias] = useState<any[]>([]);
 
-  const [valor, setValor] = useState("");
+  const [valor, setValor] = useState(0);
   const [idCat, setIdCat] = useState("");
   const [idMat, setIdMat] = useState("");
   const [idProd, setIdProd] = useState("");
   const [fator, setFator] = useState("");
   const [uniques, setUniques] = useState<any[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
   const [loading, setLoading] = useState(true);
+  const { isSubmitting, withLock } = useSubmitLock();
+  const [toDelete, setToDelete] = useState<{ id: number; label: string } | null>(null);
 
   useEffect(() => { document.title = "Gastos · Vendas Pro"; }, []);
 
@@ -61,19 +74,20 @@ const Gastos = () => {
 
   const add = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!empresaId || !idCat || !valor || isSubmitting) return;
-    
-    setIsSubmitting(true);
-    try {
-      const valorNum = parseFloat(valor) || 0;
+    if (!empresaId || !idCat) return;
+    if (valor <= 0) return toast.error("Informe o valor do gasto");
+
+    await withLock(async () => {
+      try {
+      const valorNum = valor;
       let fatorNum = parseFloat(fator) || 0;
       const matId = idMat ? parseInt(idMat) : null;
       const prodId = idProd ? parseInt(idProd) : null;
 
       if (matId) {
         const mat = materias.find(m => m.id === matId);
-        if (mat?.unidade_medida === 'kg') {
-          fatorNum = fatorNum * 1000;
+        if (mat?.unidade_medida && isBulkUnit(mat.unidade_medida)) {
+          fatorNum = toBaseQuantity(mat.unidade_medida, fatorNum);
         }
       }
 
@@ -214,21 +228,22 @@ const Gastos = () => {
       }
     }
 
-      setValor(""); setIdMat(""); setIdProd(""); setFator("");
+      setValor(0); setIdMat(""); setIdProd(""); setFator("");
       toast.success("Gasto registrado e custos atualizados");
       await load();
-    } catch (e: any) {
-      console.error(e);
-      toast.error("Erro inesperado ao registrar gasto");
-    } finally {
-      setIsSubmitting(false);
-    }
+      } catch (e) {
+        console.error(e);
+        toast.error("Erro inesperado ao registrar gasto");
+      }
+    });
   };
 
   const remove = async (id: number) => {
     if (!empresaId) return;
     const { error } = await supabase.from("Gastos").delete().eq("id", id).eq("id_empresa", empresaId);
     if (error) return toast.error(error.message);
+    toast.success("Gasto excluído");
+    setToDelete(null);
     load();
   };
 
@@ -246,12 +261,12 @@ const Gastos = () => {
     <div className="space-y-6 max-w-5xl mx-auto">
       <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-semibold">Gastos</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold">Gastos</h1>
           <p className="text-muted-foreground text-sm">Despesas operacionais</p>
         </div>
         <div className="text-left sm:text-right">
           <div className="text-xs uppercase text-muted-foreground tracking-wider">Total</div>
-          <div className="text-xl sm:text-2xl font-semibold text-destructive">{fmt(total)}</div>
+          <div className="text-xl sm:text-2xl font-bold text-destructive">{fmt(total)}</div>
         </div>
       </header>
 
@@ -274,7 +289,7 @@ const Gastos = () => {
           </div>
           <div className="space-y-2">
             <Label>Valor (R$)</Label>
-            <Input type="number" step="0.01" required value={valor} onChange={(e) => setValor(e.target.value)} />
+            <CurrencyInput required value={valor} onValueChange={setValor} />
           </div>
           {categorias.find(c => String(c.id) === idCat)?.Nome?.toLowerCase().includes("materia") && (
             <>
@@ -293,11 +308,10 @@ const Gastos = () => {
               {idMat && (
                  <div className="space-y-2">
                   <Label>
-                    {materias.find(m => String(m.id) === idMat)?.unidade_medida === 'kg' ? 'Quantidade (em kg)' :
-                     materias.find(m => String(m.id) === idMat)?.unidade_medida === 'g' ? 'Gramas (g)' : 'Quantidade (un)'}
+                    {quantityInputLabel(materias.find(m => String(m.id) === idMat)?.unidade_medida || "un")}
                   </Label>
                   <Input type="number" step="0.01" required value={fator} onChange={(e) => setFator(e.target.value)} placeholder={
-                    materias.find(m => String(m.id) === idMat)?.unidade_medida === 'kg' ? "Ex: 5" : "Qtd"
+                    quantityInputPlaceholder(materias.find(m => String(m.id) === idMat)?.unidade_medida || "un")
                   } />
                 </div>
               )}
@@ -354,15 +368,24 @@ const Gastos = () => {
                 <td className="px-4 py-2 flex flex-col justify-center">
                   <span>{g.MateriaPrima?.nome || g.Produtos?.Nome || "—"}</span>
                   {g.MateriaPrima && g.MateriaPrima.unidade_medida === 'kg' && g.Fator && (
-                     <span className="text-[10px] text-muted-foreground bg-muted w-fit px-1.5 rounded uppercase mt-0.5 tracking-tight">{(g.Fator / 1000).toLocaleString('pt-BR')} Kg</span>
+                     <span className="text-[10px] text-muted-foreground bg-muted w-fit px-1.5 rounded uppercase mt-0.5 tracking-tight">{(g.Fator / 1000).toLocaleString('pt-BR')} kg</span>
                   )}
                   {g.MateriaPrima && g.MateriaPrima.unidade_medida === 'g' && g.Fator && (
                      <span className="text-[10px] text-muted-foreground bg-muted w-fit px-1.5 rounded uppercase mt-0.5 tracking-tight">{g.Fator} g</span>
                   )}
+                  {g.MateriaPrima && g.MateriaPrima.unidade_medida === 'l' && g.Fator && (
+                     <span className="text-[10px] text-muted-foreground bg-muted w-fit px-1.5 rounded uppercase mt-0.5 tracking-tight">{(g.Fator / 1000).toLocaleString('pt-BR')} l</span>
+                  )}
+                  {g.MateriaPrima && g.MateriaPrima.unidade_medida === 'ml' && g.Fator && (
+                     <span className="text-[10px] text-muted-foreground bg-muted w-fit px-1.5 rounded uppercase mt-0.5 tracking-tight">{g.Fator} ml</span>
+                  )}
                 </td>
                 <td className="px-4 py-2 text-right text-destructive font-medium">{fmt(g.Valor)}</td>
                 <td className="px-4 py-2 text-right">
-                  <Button size="sm" variant="ghost" onClick={() => remove(g.id)}>
+                  <Button size="sm" variant="ghost" onClick={() => setToDelete({
+                    id: g.id,
+                    label: `${fmtDate(g.created_at)} · ${g.Categoria?.Nome ?? "—"} · ${fmt(g.Valor)}`,
+                  })}>
                     <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
                 </td>
@@ -375,6 +398,26 @@ const Gastos = () => {
         </table>
         </div>
       </Card>
+
+      <AlertDialog open={!!toDelete} onOpenChange={(open) => !open && setToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir gasto?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir o gasto <strong>{toDelete?.label}</strong>? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => toDelete && remove(toDelete.id)}
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

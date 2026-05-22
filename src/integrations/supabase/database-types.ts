@@ -38,6 +38,21 @@ export type Database = {
         Insert: { id_produto: number; id_materia: number; id_empresa: number; quantidade: number };
         Update: { id_produto?: number; id_materia?: number; id_empresa?: number; quantidade?: number };
       };
+      molho: {
+        Row: { id: string; created_at: string; id_empresa: number; nome: string; custo_unitario: number | null };
+        Insert: { id_empresa: number; nome: string; custo_unitario?: number | null };
+        Update: { id_empresa?: number; nome?: string; custo_unitario?: number | null };
+      };
+      molhoxmateria: {
+        Row: { id: number; created_at: string; id_empresa: number; id_materia: number; id_molho: string; quantidade: number };
+        Insert: { id_empresa: number; id_materia: number; id_molho: string; quantidade: number };
+        Update: { id_empresa?: number; id_materia?: number; id_molho?: string; quantidade?: number };
+      };
+      molhoxproduto: {
+        Row: { id: number; created_at: string; id_empresa: number; id_produto: number; id_molho: string; quantidade: number };
+        Insert: { id_empresa: number; id_produto: number; id_molho: string; quantidade: number };
+        Update: { id_empresa?: number; id_produto?: number; id_molho?: string; quantidade?: number };
+      };
       Cardapio: {
         Row: { id: number; created_at: string; Nome: string; id_empresa: number | null; Valor: number | null };
         Insert: { Nome: string; id_empresa?: number | null; Valor?: number | null };

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { toast } from "sonner";
+import { baseUnit, isBulkUnit } from "@/lib/unidade-medida";
 
 const Estoque = () => {
   const { empresaId } = useAuth();
@@ -55,7 +55,7 @@ const Estoque = () => {
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
       <header>
-        <h1 className="text-2xl sm:text-3xl font-semibold">Estoque</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold">Estoque</h1>
         <p className="text-muted-foreground text-sm">Saldo atual de matérias-primas</p>
       </header>
 
@@ -79,13 +79,13 @@ const Estoque = () => {
                 <tr key={"mat-"+m.id} className="hover:bg-muted/30">
                   <td className="px-4 py-3">{m.nome} <span className="text-[10px] text-muted-foreground ml-1 uppercase">(MP)</span></td>
                   <td className={`px-4 py-3 text-right font-medium ${s < 0 ? "text-destructive" : s === 0 ? "text-muted-foreground" : "text-success"}`}>
-                    {m.unidade_medida === 'kg' ? (
+                    {isBulkUnit(m.unidade_medida) ? (
                        <div className="flex flex-col items-end leading-tight">
-                         <span>{(s / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 3 })} kg</span>
-                         <span className="text-[10px] opacity-70 font-normal mt-0.5">{s.toLocaleString()} g</span>
+                         <span>{(s / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 3 })} {m.unidade_medida}</span>
+                         <span className="text-[10px] opacity-70 font-semibold mt-0.5">{s.toLocaleString()} {baseUnit(m.unidade_medida)}</span>
                        </div>
-                    ) : m.unidade_medida === 'g' ? (
-                       <span>{s.toLocaleString()} g</span>
+                    ) : m.unidade_medida === 'g' || m.unidade_medida === 'ml' ? (
+                       <span>{s.toLocaleString()} {m.unidade_medida}</span>
                     ) : (
                        <span>{s.toLocaleString()} un</span>
                     )}

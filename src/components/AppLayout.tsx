@@ -2,7 +2,7 @@ import { NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 import {
   LayoutDashboard, ShoppingCart, BookOpen, Package, Boxes,
-  Tags, Wallet, Building2, LogOut, Receipt, Wheat, Send, Store,
+  Tags, Wallet, Building2, LogOut, Receipt, Wheat, Send, Store, Droplets,
   ChevronDown, Briefcase, DollarSign, ClipboardList, Menu
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 /* ── Types ── */
 type NavItem = {
@@ -55,6 +56,7 @@ const navGroups: NavGroup[] = [
     icon: ClipboardList,
     items: [
       { to: "/materias", label: "Matéria-Prima", icon: Wheat, roles: ["admin", "gerente"] },
+      { to: "/molhos", label: "Molhos", icon: Droplets, roles: ["admin", "gerente"] },
       { to: "/produtos", label: "Produtos", icon: Package, roles: ["admin", "gerente"] },
       { to: "/cardapio", label: "Cardápio", icon: BookOpen, roles: ["admin", "gerente"] },
     ],
@@ -77,11 +79,11 @@ const SidebarLink = ({ item, isGroupChild = false }: { item: NavItem; isGroupChi
     end={item.to === "/"}
     className={({ isActive }) =>
       cn(
-        "flex items-center gap-4 rounded-md text-sm transition-colors w-full min-w-[220px]",
+        "flex items-center gap-4 rounded-md text-sm font-semibold transition-colors w-full min-w-[220px]",
         isGroupChild ? "px-[11px] py-2 pl-[35px]" : "px-[11px] py-2.5",
         isActive
-          ? "bg-primary/10 text-primary font-medium"
-          : "text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground"
+          ? "bg-primary/10 text-primary font-bold"
+          : "text-sidebar-foreground dark:text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground"
       )
     }
   >
@@ -100,11 +102,11 @@ const MobileSidebarLink = ({ item, isGroupChild = false, onNavigate }: { item: N
     onClick={onNavigate}
     className={({ isActive }) =>
       cn(
-        "flex items-center gap-3 rounded-lg text-sm transition-colors w-full",
+        "flex items-center gap-3 rounded-lg text-sm font-semibold transition-colors w-full",
         isGroupChild ? "px-3 py-2.5 pl-10" : "px-3 py-2.5",
         isActive
-          ? "bg-primary/10 text-primary font-medium"
-          : "text-foreground/80 hover:bg-muted/80 hover:text-foreground"
+          ? "bg-primary/10 text-primary font-bold"
+          : "text-foreground dark:text-foreground/80 hover:bg-muted/80 hover:text-foreground"
       )
     }
   >
@@ -148,8 +150,8 @@ const SidebarGroup = ({
             "flex items-center gap-4 px-[11px] py-2.5 rounded-md text-sm transition-colors w-full min-w-[220px]",
             // Se algum filho estiver ativo, o PAI ganha a cor primary no texto
             isAnyActive 
-              ? "text-primary font-medium" 
-              : "text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground"
+              ? "text-primary font-bold" 
+              : "text-sidebar-foreground dark:text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground"
           )}
         >
           <group.icon className={cn("h-[18px] w-[18px] flex-shrink-0", isAnyActive && "text-primary")} />
@@ -200,12 +202,12 @@ const MobileSidebarGroup = ({
           className={cn(
             "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors w-full",
             isAnyActive 
-              ? "text-primary font-medium" 
-              : "text-foreground/80 hover:bg-muted/80 hover:text-foreground"
+              ? "text-primary font-bold" 
+              : "text-foreground dark:text-foreground/80 hover:bg-muted/80 hover:text-foreground"
           )}
         >
           <group.icon className={cn("h-[18px] w-[18px] flex-shrink-0", isAnyActive && "text-primary")} />
-          <span className="whitespace-nowrap flex-1 text-left font-medium">
+          <span className="whitespace-nowrap flex-1 text-left font-semibold">
             {group.label}
           </span>
           <ChevronDown
@@ -266,7 +268,7 @@ export const AppLayout = () => {
       <aside 
         onMouseEnter={() => setIsSidebarHovered(true)}
         onMouseLeave={() => setIsSidebarHovered(false)}
-        className="hidden md:flex flex-col border-r border-sidebar-border bg-sidebar fixed left-0 top-0 h-full z-40 w-[65px] hover:w-64 transition-all duration-300 ease-in-out group overflow-hidden shadow-[4px_0_24px_rgba(0,0,0,0.02)]"
+        className="hidden md:flex flex-col border-r border-sidebar-border bg-sidebar fixed left-0 top-0 h-full z-40 w-[65px] hover:w-64 transition-all duration-300 ease-in-out group overflow-hidden shadow-[4px_0_24px_rgba(0,0,0,0.04)] dark:shadow-[4px_0_24px_rgba(0,0,0,0.25)]"
       >
         <div className="h-[65px] flex items-center px-4 border-b border-sidebar-border w-64 flex-shrink-0">
           <div className="flex items-center gap-3 w-full">
@@ -274,7 +276,7 @@ export const AppLayout = () => {
               <Store className="h-4 w-4" />
             </div>
             <div className="flex flex-col opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap overflow-hidden">
-              <span className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground/70 leading-tight">Empresa</span>
+              <span className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground leading-tight">Empresa</span>
               <span className="font-semibold text-sidebar-foreground truncate leading-tight text-sm">{empresaNome ?? "—"}</span>
             </div>
           </div>
@@ -318,7 +320,7 @@ export const AppLayout = () => {
             </Button>
 
             <div className="hidden group-hover:flex flex-col flex-1 w-full opacity-0 group-hover:opacity-100 transition-opacity px-1">
-              <div className="text-[11px] text-muted-foreground/80 truncate mb-2 font-medium">{user?.email}</div>
+              <div className="text-[11px] text-muted-foreground truncate mb-2 font-medium">{user?.email}</div>
               <Button variant="outline" size="sm" className="w-full bg-background" onClick={handleLogout}>
                 <LogOut className="h-4 w-4 mr-2" /> Sair do Sistema
               </Button>
@@ -338,7 +340,7 @@ export const AppLayout = () => {
                 <Store className="h-4 w-4" />
               </div>
               <div className="flex flex-col whitespace-nowrap overflow-hidden">
-                <span className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground/70 leading-tight">Empresa</span>
+                <span className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground leading-tight">Empresa</span>
                 <span className="font-semibold text-sidebar-foreground truncate leading-tight text-sm">{empresaNome ?? "—"}</span>
               </div>
             </div>
@@ -371,7 +373,7 @@ export const AppLayout = () => {
           </nav>
 
           <div className="p-3 border-t border-sidebar-border flex-shrink-0 bg-sidebar/50">
-            <div className="text-[11px] text-muted-foreground/80 truncate mb-2 font-medium px-1">{user?.email}</div>
+            <div className="text-[11px] text-muted-foreground truncate mb-2 font-medium px-1">{user?.email}</div>
             <Button variant="outline" size="sm" className="w-full bg-background" onClick={() => { closeMobile(); handleLogout(); }}>
               <LogOut className="h-4 w-4 mr-2" /> Sair do Sistema
             </Button>
@@ -379,14 +381,17 @@ export const AppLayout = () => {
         </SheetContent>
       </Sheet>
 
-      <div className="flex-1 flex flex-col min-w-0 bg-secondary/10">
-        <header className="md:hidden flex items-center justify-between px-4 py-3 border-b border-border bg-background sticky top-0 z-30">
-          <div className="flex items-center gap-3">
-            <Button size="icon" variant="ghost" onClick={() => setMobileOpen(true)} className="h-9 w-9">
+      <div className="flex-1 flex flex-col min-w-0 bg-muted/40 dark:bg-secondary/10">
+        <header className="flex items-center justify-between gap-3 px-4 md:px-8 py-3 border-b border-border bg-background sticky top-0 z-30 shadow-sm">
+          <div className="flex items-center gap-3 min-w-0 md:flex-1">
+            <Button size="icon" variant="ghost" onClick={() => setMobileOpen(true)} className="h-9 w-9 shrink-0 md:hidden">
               <Menu className="h-5 w-5" />
             </Button>
-            <div className="font-semibold text-sm truncate">{empresaNome ?? "Sistema"}</div>
+            <div className="font-bold text-sm md:text-base truncate text-foreground">
+              {empresaNome ?? "Sistema"}
+            </div>
           </div>
+          <ThemeToggle className="border border-border bg-card shadow-sm" />
         </header>
         <main className="flex-1 p-4 md:p-8 overflow-auto">
           <Outlet />

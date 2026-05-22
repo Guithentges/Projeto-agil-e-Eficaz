@@ -54,7 +54,7 @@ const Categorias = () => {
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
       <header>
-        <h1 className="text-3xl font-semibold">Categorias</h1>
+        <h1 className="text-3xl font-bold">Categorias</h1>
         <p className="text-muted-foreground">Categorize seus gastos</p>
       </header>
 

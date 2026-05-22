@@ -6,8 +6,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useSubmitLock } from "@/hooks/useSubmitLock";
 import { toast } from "sonner";
 import { Trash2, Plus } from "lucide-react";
+import { bulkCostMultiplier, baseUnit, isBulkUnit } from "@/lib/unidade-medida";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const fmt = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
@@ -18,6 +30,8 @@ const MateriaPrima = () => {
   const [unidade, setUnidade] = useState("un");
 
   const [loading, setLoading] = useState(true);
+  const [toDelete, setToDelete] = useState<{ id: number; nome: string } | null>(null);
+  const { isSubmitting, withLock } = useSubmitLock();
 
   useEffect(() => { document.title = "Matéria-Prima · Vendas Pro"; }, []);
 
@@ -33,20 +47,27 @@ const MateriaPrima = () => {
   const add = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!empresaId) return;
-    const { error } = await supabase.from("MateriaPrima").insert({
-      nome, Custo: 0, id_empresa: empresaId, unidade_medida: unidade
-    } as any);
-    if (error) return toast.error(error.message);
-    setNome("");
-    setUnidade("un");
-    toast.success("Matéria-prima cadastrada");
-    load();
+    await withLock(async () => {
+      const { error } = await supabase.from("MateriaPrima").insert({
+        nome, Custo: 0, id_empresa: empresaId, unidade_medida: unidade,
+      } as any);
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+      setNome("");
+      setUnidade("un");
+      toast.success("Matéria-prima cadastrada");
+      await load();
+    });
   };
 
   const remove = async (id: number) => {
     if (!empresaId) return;
     const { error } = await supabase.from("MateriaPrima").delete().eq("id", id).eq("id_empresa", empresaId);
     if (error) return toast.error(error.message);
+    toast.success("Matéria-prima excluída");
+    setToDelete(null);
     load();
   };
 
@@ -61,7 +82,7 @@ const MateriaPrima = () => {
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
       <header>
-        <h1 className="text-2xl sm:text-3xl font-semibold">Matéria-Prima</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold">Matéria-Prima</h1>
         <p className="text-muted-foreground text-sm">Insumos com custo e fator de rendimento</p>
       </header>
 
@@ -79,10 +100,14 @@ const MateriaPrima = () => {
                 <SelectItem value="un">Unidade (un)</SelectItem>
                 <SelectItem value="g">Grama (g)</SelectItem>
                 <SelectItem value="kg">Quilograma (kg)</SelectItem>
+                <SelectItem value="ml">Mililitro (ml)</SelectItem>
+                <SelectItem value="l">Litro (l)</SelectItem>
               </SelectContent>
             </Select>
           </div>
-          <Button type="submit" className="sm:col-span-1"><Plus className="h-4 w-4 mr-1" /> Adicionar</Button>
+          <Button type="submit" disabled={isSubmitting} className="sm:col-span-1">
+            {isSubmitting ? "Cadastrando..." : <><Plus className="h-4 w-4 mr-1" /> Adicionar</>}
+          </Button>
         </form>
       </Card>
 
@@ -112,17 +137,17 @@ const MateriaPrima = () => {
                   </span>
                 </td>
                 <td className="px-4 py-3 text-right text-primary">
-                  {und === 'kg' ? (
+                  {isBulkUnit(und) ? (
                     <div className="flex flex-col">
-                       <span>{fmt(m.Custo ?? 0)} / g</span>
-                       <span className="text-[10px] text-muted-foreground font-semibold">{fmt((m.Custo ?? 0) * 1000)} / kg</span>
+                       <span>{fmt(m.Custo ?? 0)} / {baseUnit(und)}</span>
+                       <span className="text-[10px] text-muted-foreground font-semibold">{fmt((m.Custo ?? 0) * bulkCostMultiplier(und))} / {und}</span>
                     </div>
                   ) : (
                     <span>{fmt(m.Custo ?? 0)} / {und}</span>
                   )}
                 </td>
                 <td className="px-4 py-3 text-right">
-                  <Button size="sm" variant="ghost" onClick={() => remove(m.id)}>
+                  <Button size="sm" variant="ghost" onClick={() => setToDelete({ id: m.id, nome: m.nome })}>
                     <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
                 </td>
@@ -138,6 +163,26 @@ const MateriaPrima = () => {
         </table>
         </div>
       </Card>
+
+      <AlertDialog open={!!toDelete} onOpenChange={(open) => !open && setToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir matéria-prima?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir <strong>{toDelete?.nome}</strong>? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => toDelete && remove(toDelete.id)}
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

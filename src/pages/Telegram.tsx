@@ -84,7 +84,7 @@ const Telegram = () => {
           <Send className="h-6 w-6" />
         </div>
         <div>
-          <h1 className="text-3xl font-semibold">Configuração Telegram</h1>
+          <h1 className="text-3xl font-bold">Configuração Telegram</h1>
           <p className="text-muted-foreground">Gerencie os IDs únicos autorizados para sua empresa</p>
         </div>
       </header>
@@ -116,7 +116,7 @@ const Telegram = () => {
 
       <Card className="overflow-hidden shadow-card">
         <div className="px-6 py-4 border-b border-border bg-muted/20 flex items-center justify-between">
-          <h2 className="font-semibold text-lg flex items-center gap-2">
+          <h2 className="font-bold text-lg flex items-center gap-2">
             <Send className="h-4 w-4 text-primary" /> Chats Autorizados
           </h2>
           <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full font-medium">

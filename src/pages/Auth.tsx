@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { Store } from "lucide-react";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -67,13 +68,16 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen grid lg:grid-cols-2 bg-background">
+    <div className="min-h-screen grid lg:grid-cols-2 bg-background relative">
+      <div className="absolute top-4 right-4 z-10">
+        <ThemeToggle className="bg-card/80 backdrop-blur border border-border shadow-sm rounded-md" />
+      </div>
       <div className="hidden lg:flex flex-col justify-between p-12 gradient-surface border-r border-border">
         <div className="flex items-center gap-2 text-primary font-semibold">
           <Store className="h-5 w-5" /> Vendas Pro
         </div>
         <div>
-          <h1 className="text-4xl font-semibold mb-3 leading-tight">
+          <h1 className="text-4xl font-bold mb-3 leading-tight">
             Gestão completa do seu negócio em um só lugar.
           </h1>
           <p className="text-muted-foreground max-w-md">

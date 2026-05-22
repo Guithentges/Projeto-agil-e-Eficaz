@@ -14,7 +14,7 @@ const Stat = ({ icon: Icon, label, value, accent, details }: any) => (
     <div className="flex items-start justify-between relative z-10">
       <div>
         <div className="text-xs uppercase tracking-wider text-muted-foreground">{label}</div>
-        <div className="text-2xl font-semibold mt-1">{value}</div>
+        <div className="text-2xl font-bold mt-1">{value}</div>
         {details && <div className="text-xs text-muted-foreground mt-2">{details}</div>}
       </div>
       <div className={`p-3 rounded-xl ${accent}`}><Icon className="h-5 w-5" /></div>
@@ -142,7 +142,7 @@ const Dashboard = () => {
     <div className="space-y-6 max-w-7xl mx-auto">
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-semibold">Olá{empresaNome ? `, ${empresaNome}` : ""}</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold">Olá{empresaNome ? `, ${empresaNome}` : ""}</h1>
           <p className="text-muted-foreground mt-1">Visão geral do seu negócio e fluxo de caixa</p>
         </div>
         
@@ -167,7 +167,7 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="p-6 shadow-card col-span-1 lg:col-span-2 min-h-[350px] flex flex-col">
           <div className="mb-6">
-            <h2 className="font-semibold text-lg">Top Produtos Mais Vendidos</h2>
+            <h2 className="font-bold text-lg">Top Produtos Mais Vendidos</h2>
             <p className="text-sm text-muted-foreground">Volume de unidades vendidas no período selecionado</p>
           </div>
           
@@ -208,7 +208,7 @@ const Dashboard = () => {
 
         <Card className="p-6 shadow-card col-span-1 flex flex-col">
            <div className="mb-4">
-             <h2 className="font-semibold text-lg">Resumo de Itens</h2>
+             <h2 className="font-bold text-lg">Resumo de Itens</h2>
              <p className="text-sm text-muted-foreground">O que mais saiu no período</p>
            </div>
            

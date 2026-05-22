@@ -49,7 +49,7 @@ const Empresa = () => {
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
       <header>
-        <h1 className="text-3xl font-semibold">Empresa</h1>
+        <h1 className="text-3xl font-bold">Empresa</h1>
         <p className="text-muted-foreground">Dados da sua empresa</p>
       </header>
 

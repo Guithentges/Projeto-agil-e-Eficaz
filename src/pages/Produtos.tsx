@@ -2,11 +2,25 @@ import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/CurrencyInput";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useSubmitLock } from "@/hooks/useSubmitLock";
+import { baseUnit } from "@/lib/unidade-medida";
+import { calcProdutoCusto, recalcProdutosComMolhos } from "@/lib/molho";
 import { toast } from "sonner";
 import { Trash2, Plus, ChevronDown, ChevronUp } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const fmt = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -15,21 +29,30 @@ const Produtos = () => {
   const { empresaId } = useAuth();
   const [items, setItems] = useState<any[]>([]);
   const [materias, setMaterias] = useState<any[]>([]);
+  const [molhos, setMolhos] = useState<any[]>([]);
   const [receitas, setReceitas] = useState<Record<number, any[]>>({});
+  const [molhosProd, setMolhosProd] = useState<Record<number, any[]>>({});
   const [open, setOpen] = useState<number | null>(null);
 
   const [nome, setNome] = useState("");
-  const [preco, setPreco] = useState("");
+  const [preco, setPreco] = useState(0);
 
   const [novasMateriasProd, setNovasMateriasProd] = useState<{ id: string, name: string, qtd: string }[]>([]);
+  const [novosMolhosProd, setNovosMolhosProd] = useState<{ id: string; name: string; qtd: string }[]>([]);
   const [tempMateria, setTempMateria] = useState("");
   const [tempQtd, setTempQtd] = useState("");
+  const [tempMolho, setTempMolho] = useState("");
+  const [tempMolhoQtd, setTempMolhoQtd] = useState("");
 
-  // adicionar materia
+  // adicionar materia / molho
   const [novoMateria, setNovoMateria] = useState("");
   const [novoQtd, setNovoQtd] = useState("");
+  const [novoMolho, setNovoMolho] = useState("");
+  const [novoMolhoQtd, setNovoMolhoQtd] = useState("");
 
   const [loading, setLoading] = useState(true);
+  const [toDelete, setToDelete] = useState<{ id: number; nome: string } | null>(null);
+  const { isSubmitting, withLock } = useSubmitLock();
 
   useEffect(() => { document.title = "Produtos · Vendas Pro"; }, []);
 
@@ -40,6 +63,8 @@ const Produtos = () => {
     setItems(prods ?? []);
     const { data: mats } = await supabase.from("MateriaPrima").select("*").eq("id_empresa", empresaId);
     setMaterias(mats ?? []);
+    const { data: mols } = await supabase.from("molho").select("*").eq("id_empresa", empresaId).order("nome");
+    setMolhos(mols ?? []);
     const { data: pm } = await supabase.from("ProduxMateria").select("*, MateriaPrima:id_materia(nome, Custo)").eq("id_empresa", empresaId);
     const map: Record<number, any[]> = {};
     (pm ?? []).forEach((r: any) => {
@@ -47,6 +72,30 @@ const Produtos = () => {
       map[r.id_produto].push(r);
     });
     setReceitas(map);
+    const { data: mxp } = await supabase.from("molhoxproduto").select("*, molho:id_molho(nome, custo_unitario)").eq("id_empresa", empresaId);
+    const mapMolho: Record<number, any[]> = {};
+    (mxp ?? []).forEach((r: any) => {
+      mapMolho[r.id_produto] ??= [];
+      mapMolho[r.id_produto].push(r);
+    });
+    setMolhosProd(mapMolho);
+
+    const idsComMolho = Object.keys(mapMolho).map((id) => parseInt(id, 10));
+    if (idsComMolho.length > 0) {
+      try {
+        await recalcProdutosComMolhos(supabase, idsComMolho, empresaId);
+        const { data: atualizados } = await supabase
+          .from("Produtos")
+          .select("*")
+          .eq("id_empresa", empresaId)
+          .order("id", { ascending: false });
+        if (atualizados) setItems(atualizados);
+      } catch (e: any) {
+        console.error(e);
+        toast.error("Erro ao atualizar custo com molhos: " + (e.message ?? "verifique permissões"));
+      }
+    }
+
     setLoading(false);
   };
   useEffect(() => { load(); }, [empresaId]);
@@ -54,38 +103,62 @@ const Produtos = () => {
   const add = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!empresaId) return;
-    const { data: prodData, error } = await supabase.from("Produtos").insert({
-      Nome: nome, Preco_venda: parseFloat(preco), Custo: 0, id_empresa: empresaId, is_unique: novasMateriasProd.length === 0,
-    } as any).select().single();
-    
-    if (error) return toast.error(error.message);
+    if (preco <= 0) return toast.error("Informe o preço de venda");
+    await withLock(async () => {
+      const { data: prodData, error } = await supabase.from("Produtos").insert({
+        Nome: nome, Preco_venda: preco, Custo: 0, id_empresa: empresaId,
+        is_unique: novasMateriasProd.length === 0 && novosMolhosProd.length === 0,
+      } as any).select().single();
 
-    if (novasMateriasProd.length > 0) {
-      const pmData = novasMateriasProd.map(m => ({
-        id_produto: prodData.id,
-        id_materia: parseInt(m.id),
-        quantidade: parseInt(m.qtd),
-        id_empresa: empresaId,
-      }));
-      const { error: pmError } = await supabase.from("ProduxMateria").insert(pmData);
-      if (pmError) {
-        toast.error("Erro ao vincular matérias-primas: " + pmError.message);
-      } else {
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+
+      if (novasMateriasProd.length > 0) {
+        const pmData = novasMateriasProd.map(m => ({
+          id_produto: prodData.id,
+          id_materia: parseInt(m.id),
+          quantidade: parseInt(m.qtd),
+          id_empresa: empresaId,
+        }));
+        const { error: pmError } = await supabase.from("ProduxMateria").insert(pmData);
+        if (pmError) toast.error("Erro ao vincular matérias-primas: " + pmError.message);
+      }
+
+      if (novosMolhosProd.length > 0) {
+        const molhoData = novosMolhosProd.map((m) => ({
+          id_produto: prodData.id,
+          id_molho: m.id,
+          id_empresa: empresaId,
+          quantidade: parseFloat(m.qtd) || 0,
+        }));
+        const { error: molhoError } = await supabase.from("molhoxproduto").insert(molhoData);
+        if (molhoError) toast.error("Erro ao vincular molhos: " + molhoError.message);
+      }
+
+      if (novasMateriasProd.length > 0 || novosMolhosProd.length > 0) {
         await recalcCusto(prodData.id);
       }
-    }
 
-    setNome(""); setPreco("");
-    setNovasMateriasProd([]);
-    toast.success("Produto cadastrado");
-    load();
+      setNome(""); setPreco(0);
+      setNovasMateriasProd([]);
+      setNovosMolhosProd([]);
+      setTempMolho("");
+      setTempMolhoQtd("");
+      toast.success("Produto cadastrado");
+      await load();
+    });
   };
 
   const remove = async (id: number) => {
     if (!empresaId) return;
     await supabase.from("ProduxMateria").delete().eq("id_produto", id).eq("id_empresa", empresaId);
+    await supabase.from("molhoxproduto").delete().eq("id_produto", id).eq("id_empresa", empresaId);
     const { error } = await supabase.from("Produtos").delete().eq("id", id).eq("id_empresa", empresaId);
     if (error) return toast.error(error.message);
+    toast.success("Produto excluído");
+    setToDelete(null);
     load();
   };
 
@@ -116,13 +189,45 @@ const Produtos = () => {
     load();
   };
 
+  const addMolho = async (idProduto: number) => {
+    if (!novoMolho || !novoMolhoQtd || !empresaId) return;
+    const jaExiste = (molhosProd[idProduto] ?? []).some((r) => r.id_molho === novoMolho);
+    if (jaExiste) return toast.error("Este molho já está vinculado ao produto.");
+
+    const { error } = await supabase.from("molhoxproduto").insert({
+      id_produto: idProduto,
+      id_molho: novoMolho,
+      id_empresa: empresaId,
+      quantidade: parseFloat(novoMolhoQtd) || 0,
+    });
+    if (error) return toast.error(error.message);
+    setNovoMolho("");
+    setNovoMolhoQtd("");
+    await recalcCusto(idProduto);
+    load();
+  };
+
+  const removeMolho = async (id: number, idProduto: number) => {
+    if (!empresaId) return;
+    await supabase.from("molhoxproduto").delete().eq("id", id).eq("id_empresa", empresaId);
+    await recalcCusto(idProduto);
+    load();
+  };
+
   const recalcCusto = async (idProduto: number) => {
-    const { data } = await supabase.from("ProduxMateria").select("quantidade, MateriaPrima:id_materia(Custo)").eq("id_produto", idProduto);
-    const custo = (data ?? []).reduce((s: number, r: any) => {
-      const unit = r.MateriaPrima?.Custo ?? 0;
-      return s + unit * (r.quantidade ?? 0);
-    }, 0);
-    await supabase.from("Produtos").update({ Custo: custo }).eq("id", idProduto).eq("id_empresa", empresaId);
+    if (!empresaId) return;
+    try {
+      const custo = await calcProdutoCusto(supabase, idProduto, empresaId);
+      const { error } = await supabase
+        .from("Produtos")
+        .update({ Custo: custo })
+        .eq("id", idProduto)
+        .eq("id_empresa", empresaId);
+      if (error) throw error;
+      setItems((prev) => prev.map((p) => (p.id === idProduto ? { ...p, Custo: custo } : p)));
+    } catch (e: any) {
+      toast.error("Erro ao recalcular custo: " + e.message);
+    }
   };
 
     if (loading) {
@@ -136,8 +241,8 @@ const Produtos = () => {
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
       <header>
-        <h1 className="text-2xl sm:text-3xl font-semibold">Produtos</h1>
-        <p className="text-muted-foreground text-sm">Cadastre produtos com sua receita (matérias-primas)</p>
+        <h1 className="text-2xl sm:text-3xl font-bold">Produtos</h1>
+        <p className="text-muted-foreground text-sm font-medium">Cadastre produtos com receita, molhos ou revenda</p>
       </header>
 
       <Card className="p-5">
@@ -148,7 +253,7 @@ const Produtos = () => {
           </div>
           <div className="space-y-2">
             <Label>Preço de venda</Label>
-            <Input type="number" step="0.01" required value={preco} onChange={(e) => setPreco(e.target.value)} />
+            <CurrencyInput required value={preco} onValueChange={setPreco} />
           </div>
 
           <div className="md:col-span-3 space-y-4 pt-2">
@@ -175,7 +280,7 @@ const Produtos = () => {
                     <SelectContent>
                       {materias.map((m) => {
                         const und = m.unidade_medida || 'un';
-                        const labelUnd = und === 'kg' ? 'g' : und;
+                        const labelUnd = baseUnit(und);
                         return (
                           <SelectItem key={m.id} value={String(m.id)}>
                             {m.nome} (em {labelUnd})
@@ -206,8 +311,77 @@ const Produtos = () => {
               </div>
             </div>
 
+          <div className="md:col-span-3 space-y-4 pt-2 border-t">
+            <div className="text-sm font-semibold text-muted-foreground">Molhos (opcional — quantidade em gramas)</div>
+            {novosMolhosProd.length > 0 && (
+              <div className="space-y-2">
+                {novosMolhosProd.map((m, idx) => (
+                  <div key={idx} className="flex justify-between items-center text-sm border p-2 rounded bg-background font-medium">
+                    <span>{m.name} × {m.qtd} g</span>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setNovosMolhosProd((prev) => prev.filter((_, i) => i !== idx))}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="flex gap-2 items-end">
+              <div className="flex-1">
+                <Select value={tempMolho} onValueChange={setTempMolho}>
+                  <SelectTrigger><SelectValue placeholder="Selecione um molho" /></SelectTrigger>
+                  <SelectContent>
+                    {molhos.map((m) => (
+                      <SelectItem key={m.id} value={m.id}>
+                        {m.nome} ({fmt(m.custo_unitario ?? 0)}/g)
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Input
+                className="w-28"
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="Gramas"
+                value={tempMolhoQtd}
+                onChange={(e) => setTempMolhoQtd(e.target.value)}
+              />
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                onClick={() => {
+                  if (!tempMolho || !tempMolhoQtd) return toast.error("Selecione o molho e informe as gramas.");
+                  if (novosMolhosProd.some((m) => m.id === tempMolho)) {
+                    return toast.error("Este molho já foi adicionado.");
+                  }
+                  const mol = molhos.find((m) => m.id === tempMolho);
+                  if (mol) {
+                    setNovosMolhosProd((prev) => [...prev, { id: tempMolho, name: mol.nome, qtd: tempMolhoQtd }]);
+                    setTempMolho("");
+                    setTempMolhoQtd("");
+                  }
+                }}
+              >
+                Adicionar
+              </Button>
+            </div>
+            {molhos.length === 0 && (
+              <p className="text-xs text-muted-foreground font-medium">
+                Cadastre molhos em Cadastramentos → Molhos antes de vincular.
+              </p>
+            )}
+          </div>
 
-          <Button type="submit" className="md:col-span-3 mt-4"><Plus className="h-4 w-4 mr-1" /> Cadastrar produto</Button>
+          <Button type="submit" disabled={isSubmitting} className="md:col-span-3 mt-4">
+            {isSubmitting ? "Cadastrando..." : <><Plus className="h-4 w-4 mr-1" /> Cadastrar produto</>}
+          </Button>
         </form>
       </Card>
 
@@ -231,7 +405,7 @@ const Produtos = () => {
                 <Button size="sm" variant="ghost" onClick={() => setOpen(isOpen ? null : p.id)}>
                   {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                 </Button>
-                <Button size="sm" variant="ghost" onClick={() => remove(p.id)}>
+                <Button size="sm" variant="ghost" onClick={() => setToDelete({ id: p.id, nome: p.Nome })}>
                   <Trash2 className="h-4 w-4 text-destructive" />
                 </Button>
               </div>
@@ -241,7 +415,7 @@ const Produtos = () => {
                   {(receitas[p.id] ?? []).map((r) => {
                     const matInfo = materias.find(m => m.id === r.id_materia);
                     const und = matInfo?.unidade_medida || 'un';
-                    const displayUnd = und === 'kg' ? 'g' : und;
+                    const displayUnd = baseUnit(und);
                     return (
                     <div key={r.id} className="flex items-center justify-between text-sm">
                       <span>{r.MateriaPrima?.nome} × {r.quantidade} {displayUnd}</span>
@@ -258,7 +432,7 @@ const Produtos = () => {
                         <SelectContent>
                           {materias.map((m) => {
                              const und = m.unidade_medida || 'un';
-                             const labelUnd = und === 'kg' ? 'g' : und;
+                             const labelUnd = baseUnit(und);
                              return (
                                <SelectItem key={m.id} value={String(m.id)}>{m.nome} (em {labelUnd})</SelectItem>
                              )
@@ -269,6 +443,53 @@ const Produtos = () => {
                     <Input className="w-32" type="number" placeholder="Qtd" value={novoQtd} onChange={(e) => setNovoQtd(e.target.value)} />
                     <Button size="sm" onClick={() => addMateria(p.id)}>Adicionar</Button>
                   </div>
+
+                  <div className="text-xs uppercase tracking-wider text-muted-foreground font-bold pt-2">Molhos</div>
+                  {(molhosProd[p.id] ?? []).map((r) => {
+                    const molhoRef = molhos.find((m) => m.id === r.id_molho);
+                    const custoGrama =
+                      (r.molho?.custo_unitario ?? 0) > 0
+                        ? r.molho.custo_unitario
+                        : (molhoRef?.custo_unitario ?? 0);
+                    const linhaCusto = custoGrama * (r.quantidade ?? 0);
+                    return (
+                    <div key={r.id} className="flex items-center justify-between text-sm font-medium">
+                      <span>
+                        {r.molho?.nome ?? molhoRef?.nome ?? "Molho"} × {r.quantidade} g
+                        <span className="text-muted-foreground ml-2">
+                          ({fmt(linhaCusto)})
+                        </span>
+                      </span>
+                      <Button size="sm" variant="ghost" onClick={() => removeMolho(r.id, p.id)}>
+                        <Trash2 className="h-3 w-3 text-destructive" />
+                      </Button>
+                    </div>
+                    );
+                  })}
+                  <div className="flex gap-2 items-end pt-2">
+                    <div className="flex-1">
+                      <Select value={novoMolho} onValueChange={setNovoMolho}>
+                        <SelectTrigger><SelectValue placeholder="Vincular molho" /></SelectTrigger>
+                        <SelectContent>
+                          {molhos.map((m) => (
+                            <SelectItem key={m.id} value={m.id}>
+                              {m.nome} ({fmt(m.custo_unitario ?? 0)}/g)
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Input
+                      className="w-28"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="Gramas"
+                      value={novoMolhoQtd}
+                      onChange={(e) => setNovoMolhoQtd(e.target.value)}
+                    />
+                    <Button size="sm" onClick={() => addMolho(p.id)}>Vincular</Button>
+                  </div>
                 </div>
               )}
             </Card>
@@ -276,6 +497,26 @@ const Produtos = () => {
         })}
         {!loading && items.length === 0 && <Card className="p-6 text-center text-muted-foreground">Nenhum produto cadastrado.</Card>}
       </div>
+
+      <AlertDialog open={!!toDelete} onOpenChange={(open) => !open && setToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir produto?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir <strong>{toDelete?.nome}</strong>? A receita vinculada também será removida. Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => toDelete && remove(toDelete.id)}
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

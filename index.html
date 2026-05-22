@@ -20,6 +20,14 @@
   </head>
 
   <body>
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem("vendas-pro-theme");
+          if (t !== "light") document.documentElement.classList.add("dark");
+        } catch (e) {}
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

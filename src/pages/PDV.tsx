@@ -227,7 +227,7 @@ const PDV = () => {
     <div className="grid lg:grid-cols-[1fr,360px] gap-6 max-w-7xl mx-auto">
       <div className="space-y-4">
         <header>
-          <h1 className="text-2xl sm:text-3xl font-semibold">PDV</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold">PDV</h1>
           <p className="text-muted-foreground text-sm">Toque para adicionar ao pedido</p>
         </header>
         <Tabs defaultValue="cardapio" className="w-full">
@@ -361,7 +361,7 @@ const PDV = () => {
         </div>
         <div className="mt-4 pt-4 border-t border-border flex items-center justify-between">
           <span className="text-muted-foreground">Total</span>
-          <span className="text-2xl font-semibold text-primary">{fmt(total)}</span>
+          <span className="text-2xl font-bold text-primary">{fmt(total)}</span>
         </div>
         <div className="mt-4 grid grid-cols-[1fr,auto] gap-2">
           <Button disabled={itensCount === 0 || busy} onClick={finalizar}>

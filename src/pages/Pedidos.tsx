@@ -130,7 +130,7 @@ const Pedidos = () => {
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
       <header>
-        <h1 className="text-2xl sm:text-3xl font-semibold">Pedidos</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold">Pedidos</h1>
         <p className="text-muted-foreground text-sm">Gerenciamento de cozinha e histórico de vendas</p>
       </header>
 
@@ -310,7 +310,7 @@ const Pedidos = () => {
                   <Card key={v.id} className="p-4 flex flex-col sm:flex-row gap-4 justify-between sm:items-center">
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="font-semibold text-lg">Venda #{v.id}</span>
+                        <span className="font-bold text-lg">Venda #{v.id}</span>
                         <span className="text-[10px] uppercase font-bold bg-success/10 text-success px-2 py-0.5 rounded">Entregue</span>
                       </div>
                       <div className="text-xs text-muted-foreground mt-1">Feito em {fmtDate(v.created_at)}</div>
@@ -326,7 +326,7 @@ const Pedidos = () => {
                     
                     <div className="text-left sm:text-right border-t sm:border-0 border-border pt-3 sm:pt-0">
                       <div className="text-xs text-muted-foreground mb-1">{peds.length} item(s)</div>
-                      <div className="text-xl font-semibold text-primary">{fmt(total)}</div>
+                      <div className="text-xl font-bold text-primary">{fmt(total)}</div>
                     </div>
                   </Card>
                 );

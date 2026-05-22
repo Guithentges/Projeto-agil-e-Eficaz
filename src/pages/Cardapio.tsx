@@ -2,11 +2,23 @@ import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/CurrencyInput";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useSubmitLock } from "@/hooks/useSubmitLock";
 import { toast } from "sonner";
 import { Trash2, Plus, ChevronDown, ChevronUp } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const fmt = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -19,10 +31,12 @@ const Cardapio = () => {
   const [open, setOpen] = useState<number | null>(null);
 
   const [nome, setNome] = useState("");
-  const [valor, setValor] = useState("");
+  const [valor, setValor] = useState(0);
   const [novoProd, setNovoProd] = useState("");
   const [tempProds, setTempProds] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [toDelete, setToDelete] = useState<{ id: number; nome: string } | null>(null);
+  const { isSubmitting, withLock } = useSubmitLock();
 
   useEffect(() => { document.title = "Cardápio · Vendas Pro"; }, []);
 
@@ -63,28 +77,31 @@ const Cardapio = () => {
   const add = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!empresaId) return;
-    
-    // 1. Create the menu item
-    const { data: c, error: cErr } = await supabase.from("Cardapio")
-      .insert({ Nome: nome, Valor: parseFloat(valor), id_empresa: empresaId })
-      .select().single();
-    
-    if (cErr) return toast.error(cErr.message);
+    if (valor <= 0) return toast.error("Informe o valor de venda");
+    await withLock(async () => {
+      const { data: c, error: cErr } = await supabase.from("Cardapio")
+        .insert({ Nome: nome, Valor: valor, id_empresa: empresaId })
+        .select().single();
 
-    // 2. Link products if any
-    if (tempProds.length > 0) {
-      const links = tempProds.map(p => ({
-        id_cardapio: c.id,
-        id_produto: p.id,
-        id_empresa: empresaId
-      }));
-      const { error: lErr } = await supabase.from("ProduxCard").insert(links);
-      if (lErr) toast.error("Erro ao vincular produtos: " + lErr.message);
-    }
+      if (cErr) {
+        toast.error(cErr.message);
+        return;
+      }
 
-    setNome(""); setValor(""); setTempProds([]);
-    toast.success("Item adicionado ao cardápio com seus produtos");
-    load();
+      if (tempProds.length > 0) {
+        const links = tempProds.map(p => ({
+          id_cardapio: c.id,
+          id_produto: p.id,
+          id_empresa: empresaId,
+        }));
+        const { error: lErr } = await supabase.from("ProduxCard").insert(links);
+        if (lErr) toast.error("Erro ao vincular produtos: " + lErr.message);
+      }
+
+      setNome(""); setValor(0); setTempProds([]);
+      toast.success("Item adicionado ao cardápio com seus produtos");
+      await load();
+    });
   };
 
   const remove = async (id: number) => {
@@ -92,6 +109,8 @@ const Cardapio = () => {
     await supabase.from("ProduxCard").delete().eq("id_cardapio", id).eq("id_empresa", empresaId);
     const { error } = await supabase.from("Cardapio").delete().eq("id", id).eq("id_empresa", empresaId);
     if (error) return toast.error(error.message);
+    toast.success("Item do cardápio excluído");
+    setToDelete(null);
     load();
   };
 
@@ -119,7 +138,7 @@ const Cardapio = () => {
   };
 
   const tempCusto = tempProds.reduce((s, p) => s + (p.Custo ?? 0), 0);
-  const tempValor = parseFloat(valor) || 0;
+  const tempValor = valor;
   const tempMargem = tempValor > 0 ? ((tempValor - tempCusto) / tempValor) * 100 : 0;
 
     if (loading) {
@@ -133,7 +152,7 @@ const Cardapio = () => {
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
       <header>
-        <h1 className="text-2xl sm:text-3xl font-semibold">Cardápio</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold">Cardápio</h1>
         <p className="text-muted-foreground text-sm">Itens vendáveis (combinações de produtos)</p>
       </header>
 
@@ -145,7 +164,7 @@ const Cardapio = () => {
           </div>
           <div className="space-y-2">
             <Label>Valor de Venda (R$)</Label>
-            <Input type="number" step="0.01" required value={valor} onChange={(e) => setValor(e.target.value)} />
+            <CurrencyInput required value={valor} onValueChange={setValor} />
           </div>
 
           <div className="md:col-span-3 border-t pt-4 mt-2">
@@ -186,7 +205,9 @@ const Cardapio = () => {
             )}
           </div>
 
-          <Button type="submit" className="md:col-span-3 mt-2"><Plus className="h-4 w-4 mr-1" /> Cadastrar no Cardápio</Button>
+          <Button type="submit" disabled={isSubmitting} className="md:col-span-3 mt-2">
+            {isSubmitting ? "Cadastrando..." : <><Plus className="h-4 w-4 mr-1" /> Cadastrar no Cardápio</>}
+          </Button>
         </form>
       </Card>
 
@@ -202,12 +223,12 @@ const Cardapio = () => {
             <Card key={c.id} className="overflow-hidden border-l-4 border-l-transparent hover:border-l-primary transition-all">
               <div className="p-4 flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
                 <div className="flex-1">
-                  <div className="font-semibold text-lg">{c.Nome}</div>
+                  <div className="font-bold text-lg">{c.Nome}</div>
                   <div className="flex flex-wrap gap-2 sm:gap-4 mt-1">
-                    <div className="text-sm font-bold text-primary">{fmt(c.Valor ?? 0)} <span className="text-[10px] text-muted-foreground font-normal ml-1">VENDA</span></div>
-                    <div className="text-sm font-medium text-muted-foreground">{fmt(totalCusto)} <span className="text-[10px] uppercase font-normal ml-1">CUSTO</span></div>
+                    <div className="text-sm font-bold text-primary">{fmt(c.Valor ?? 0)} <span className="text-[10px] text-muted-foreground font-semibold ml-1">VENDA</span></div>
+                    <div className="text-sm font-medium text-muted-foreground">{fmt(totalCusto)} <span className="text-[10px] uppercase font-semibold ml-1">CUSTO</span></div>
                     <div className={`text-sm font-bold ${margem < 30 ? "text-destructive" : "text-success"}`}>
-                      {margem.toFixed(1)}% <span className="text-[10px] uppercase font-normal ml-1">MARGEM</span>
+                      {margem.toFixed(1)}% <span className="text-[10px] uppercase font-semibold ml-1">MARGEM</span>
                     </div>
                   </div>
                 </div>
@@ -215,7 +236,7 @@ const Cardapio = () => {
                   <Button size="sm" variant="ghost" onClick={() => setOpen(isOpen ? null : c.id)}>
                     {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                   </Button>
-                  <Button size="sm" variant="ghost" onClick={() => remove(c.id)}>
+                  <Button size="sm" variant="ghost" onClick={() => setToDelete({ id: c.id, nome: c.Nome })}>
                     <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
                 </div>
@@ -250,6 +271,26 @@ const Cardapio = () => {
         })}
         {!loading && items.length === 0 && <Card className="p-6 text-center text-muted-foreground">Nenhum item no cardápio.</Card>}
       </div>
+
+      <AlertDialog open={!!toDelete} onOpenChange={(open) => !open && setToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir item do cardápio?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir <strong>{toDelete?.nome}</strong>? Os produtos vinculados serão desvinculados. Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => toDelete && remove(toDelete.id)}
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/useAuth";
+import { ThemeProvider } from "@/components/theme-provider";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AppLayout } from "@/components/AppLayout";
 import Auth from "./pages/Auth";
@@ -13,6 +14,7 @@ import Pedidos from "./pages/Pedidos";
 import Cardapio from "./pages/Cardapio";
 import Produtos from "./pages/Produtos";
 import MateriaPrima from "./pages/MateriaPrima";
+import Molhos from "./pages/Molhos";
 import Estoque from "./pages/Estoque";
 import Categorias from "./pages/Categorias";
 import Gastos from "./pages/Gastos";
@@ -23,6 +25,7 @@ import NotFound from "./pages/NotFound.tsx";
 const queryClient = new QueryClient();
 
 const App = () => (
+  <ThemeProvider>
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
@@ -38,6 +41,7 @@ const App = () => (
               <Route path="/cardapio" element={<ProtectedRoute allow={["admin", "gerente"]}><Cardapio /></ProtectedRoute>} />
               <Route path="/produtos" element={<ProtectedRoute allow={["admin", "gerente"]}><Produtos /></ProtectedRoute>} />
               <Route path="/materias" element={<ProtectedRoute allow={["admin", "gerente"]}><MateriaPrima /></ProtectedRoute>} />
+              <Route path="/molhos" element={<ProtectedRoute allow={["admin", "gerente"]}><Molhos /></ProtectedRoute>} />
               <Route path="/estoque" element={<ProtectedRoute allow={["admin", "gerente"]}><Estoque /></ProtectedRoute>} />
               <Route path="/categorias" element={<ProtectedRoute allow={["admin", "gerente"]}><Categorias /></ProtectedRoute>} />
               <Route path="/gastos" element={<ProtectedRoute allow={["admin"]}><Gastos /></ProtectedRoute>} />
@@ -50,6 +54,7 @@ const App = () => (
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
+  </ThemeProvider>
 );
 
 export default App;
