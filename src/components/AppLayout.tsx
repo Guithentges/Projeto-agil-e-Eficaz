@@ -67,6 +67,7 @@ const bottomItems: NavItem[] = [
   { to: "/categorias", label: "Categorias", icon: Tags, roles: ["admin", "gerente"] },
   { to: "/empresa", label: "Empresa", icon: Building2, roles: ["admin"] },
   { to: "/telegram", label: "Telegram", icon: Send, roles: ["admin"] },
+  { to: "/ajuda", label: "Ajuda", icon: BookOpen, roles: ["admin", "gerente", "operador"] },
 ];
 
 const filterByRoles = (items: NavItem[], userRoles: string[]) =>
