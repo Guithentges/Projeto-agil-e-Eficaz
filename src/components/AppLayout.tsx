@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import {
   LayoutDashboard, ShoppingCart, BookOpen, Package, Boxes,
   Tags, Wallet, Building2, LogOut, Receipt, Wheat, Send, Store, Droplets,
-  ChevronDown, Briefcase, DollarSign, ClipboardList, Menu
+  ChevronDown, Briefcase, DollarSign, ClipboardList, Menu, HelpCircle
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -67,7 +67,7 @@ const bottomItems: NavItem[] = [
   { to: "/categorias", label: "Categorias", icon: Tags, roles: ["admin", "gerente"] },
   { to: "/empresa", label: "Empresa", icon: Building2, roles: ["admin"] },
   { to: "/telegram", label: "Telegram", icon: Send, roles: ["admin"] },
-  { to: "/ajuda", label: "Ajuda", icon: BookOpen, roles: ["admin", "gerente", "operador"] },
+  { to: "/ajuda", label: "Ajuda", icon: HelpCircle, roles: ["admin", "gerente", "operador"] },
 ];
 
 const filterByRoles = (items: NavItem[], userRoles: string[]) =>
