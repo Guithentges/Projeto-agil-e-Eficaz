@@ -72,6 +72,48 @@ const Ajuda = () => {
             </CollapsibleTrigger>
             <CollapsibleContent className="overflow-hidden data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up">
               <div className="mt-3 space-y-2 text-sm text-muted-foreground mx-auto max-w-3xl">
+                <Collapsible open={openFluxoChild === "cadastro"} onOpenChange={makeChildToggle(setOpenFluxoChild, "cadastro") as any}>
+                  <CollapsibleTrigger asChild>
+                    <button className={childButtonClasses(openFluxoChild === "cadastro")}>
+                      <div>
+                        <div className="font-medium">Cadastro</div>
+                        <div className="text-xs text-muted-foreground">Cadastrar empresa, categorias, matérias-primas, produtos e itens do cardápio (Fluxo inicial)</div>
+                      </div>
+                      <ChevronDown
+                        className={
+                          openFluxoChild === "cadastro"
+                            ? "h-4 w-4 rotate-180 text-primary transition-transform duration-200"
+                            : "h-4 w-4 text-muted-foreground transition-transform duration-200"
+                        }
+                      />
+                    </button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="overflow-hidden data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up">
+                    <div className="p-3 text-sm text-muted-foreground">Passo a passo: 1. configurar dados da empresa; 2. cadastrar categorias; 3. cadastrar matérias-primas; 4. cadastrar produtos com as matérias-primas já criadas; 5. cadastrar itens do cardápio com os produtos existentes.</div>
+                  </CollapsibleContent>
+                </Collapsible>
+
+                <Collapsible open={openFluxoChild === "reposicao"} onOpenChange={makeChildToggle(setOpenFluxoChild, "reposicao") as any}>
+                  <CollapsibleTrigger asChild>
+                    <button className={childButtonClasses(openFluxoChild === "reposicao")}>
+                      <div>
+                        <div className="font-medium">Registro de Gastos e Reposição de Estoque</div>
+                        <div className="text-xs text-muted-foreground">Inserir os gastos e atualizar quantidades no estoque</div>
+                      </div>
+                      <ChevronDown
+                        className={
+                          openFluxoChild === "reposicao"
+                            ? "h-4 w-4 rotate-180 text-primary transition-transform duration-200"
+                            : "h-4 w-4 text-muted-foreground transition-transform duration-200"
+                        }
+                      />
+                    </button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="overflow-hidden data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up">
+                    <div className="p-3 text-sm text-muted-foreground">Detalhes: registrar custos, se o custo for relacionado a matéria-prima, vincular lotes e ajustar quantidades para atualizar o preço de cada item e atualizar o estoque.</div>
+                  </CollapsibleContent>
+                </Collapsible>
+
                 <Collapsible open={openFluxoChild === "vendas"} onOpenChange={makeChildToggle(setOpenFluxoChild, "vendas") as any}>
                   <CollapsibleTrigger asChild>
                     <button className={childButtonClasses(openFluxoChild === "vendas")}>
@@ -89,49 +131,7 @@ const Ajuda = () => {
                     </button>
                   </CollapsibleTrigger>
                   <CollapsibleContent className="overflow-hidden data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up">
-                    <div className="p-3 text-sm text-muted-foreground">Detalhes do fluxo de vendas: selecionar produto, confirmar quantidade, aplicar descontos, finalizar pagamento.</div>
-                  </CollapsibleContent>
-                </Collapsible>
-
-                <Collapsible open={openFluxoChild === "estoque"} onOpenChange={makeChildToggle(setOpenFluxoChild, "estoque") as any}>
-                  <CollapsibleTrigger asChild>
-                    <button className={childButtonClasses(openFluxoChild === "estoque")}>
-                      <div>
-                        <div className="font-medium">Estoque</div>
-                        <div className="text-xs text-muted-foreground">Entrada, saída e ajustes</div>
-                      </div>
-                      <ChevronDown
-                        className={
-                          openFluxoChild === "estoque"
-                            ? "h-4 w-4 rotate-180 text-primary transition-transform duration-200"
-                            : "h-4 w-4 text-muted-foreground transition-transform duration-200"
-                        }
-                      />
-                    </button>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent className="overflow-hidden data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up">
-                    <div className="p-3 text-sm text-muted-foreground">Detalhes do fluxo de estoque: receber insumos, vincular a produtos e controlar saídas automáticas.</div>
-                  </CollapsibleContent>
-                </Collapsible>
-
-                <Collapsible open={openFluxoChild === "cardapio"} onOpenChange={makeChildToggle(setOpenFluxoChild, "cardapio") as any}>
-                  <CollapsibleTrigger asChild>
-                    <button className={childButtonClasses(openFluxoChild === "cardapio")}>
-                      <div>
-                        <div className="font-medium">Cardápio</div>
-                        <div className="text-xs text-muted-foreground">Categorias e produtos</div>
-                      </div>
-                      <ChevronDown
-                        className={
-                          openFluxoChild === "cardapio"
-                            ? "h-4 w-4 rotate-180 text-primary transition-transform duration-200"
-                            : "h-4 w-4 text-muted-foreground transition-transform duration-200"
-                        }
-                      />
-                    </button>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent className="overflow-hidden data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up">
-                    <div className="p-3 text-sm text-muted-foreground">Detalhes do fluxo de cardápio: criar categorias, adicionar produtos e publicar alterações.</div>
+                    <div className="p-3 text-sm text-muted-foreground">Detalhes do fluxo de vendas: selecionar produto, confirmar quantidade, aplicar descontos, finalizar pagamento e marcar como entregue.</div>
                   </CollapsibleContent>
                 </Collapsible>
               </div>
