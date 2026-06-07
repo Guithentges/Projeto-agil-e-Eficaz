@@ -2,7 +2,6 @@
 
 ![Open Source](https://img.shields.io/badge/Open%20Source-Sim-22c55e?style=for-the-badge)
 ![Status](https://img.shields.io/badge/Status-Em%20desenvolvimento-f59e0b?style=for-the-badge)
-![Licença](https://img.shields.io/badge/Licen%C3%A7a-A%20definir-64748b?style=for-the-badge)
 
 > Uma aplicação web open source para pequenos negócios gerenciarem vendas, produtos, cardápio, PDV, pedidos de cozinha, custos, empresa e integração com Telegram em um único fluxo operacional.
 
