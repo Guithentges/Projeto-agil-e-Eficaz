@@ -30,7 +30,7 @@ const MateriaPrima = () => {
   const [unidade, setUnidade] = useState("un");
 
   const [loading, setLoading] = useState(true);
-  const [toDelete, setToDelete] = useState<{ id: number; nome: string } | null>(null);
+  const [toDelete, setToDelete] = useState<{ id: number; nome: string; produtosVinculados: number[] } | null>(null);
   const { isSubmitting, withLock } = useSubmitLock();
 
   useEffect(() => { document.title = "Matéria-Prima · Vendas Pro"; }, []);
@@ -62,11 +62,70 @@ const MateriaPrima = () => {
     });
   };
 
-  const remove = async (id: number) => {
+  const handleDeleteClick = async (id: number, nome: string) => {
     if (!empresaId) return;
+    const { data } = await supabase
+      .from("ProduxMateria")
+      .select("id_produto")
+      .eq("id_materia", id)
+      .eq("id_empresa", empresaId);
+    
+    // @ts-ignore
+    const produtosIds = data ? data.map((d) => d.id_produto) : [];
+    setToDelete({ id, nome, produtosVinculados: produtosIds });
+  };
+
+  const remove = async (id: number, produtosIds: number[], deleteProducts: boolean) => {
+    if (!empresaId) return;
+
+    if (deleteProducts && produtosIds.length > 0) {
+      for (const prodId of produtosIds) {
+        await supabase.from("ProduxMateria").delete().eq("id_produto", prodId).eq("id_empresa", empresaId);
+        await supabase.from("molhoxproduto").delete().eq("id_produto", prodId).eq("id_empresa", empresaId);
+        await supabase.from("Estoque").delete().eq("id_produto", prodId).eq("id_empresa", empresaId);
+        await supabase.from("ProduxCard").delete().eq("id_produto", prodId).eq("id_empresa", empresaId);
+        await supabase.from("Gastos").delete().eq("id_produto", prodId).eq("id_empresa", empresaId);
+        await supabase.from("Produtos").delete().eq("id", prodId).eq("id_empresa", empresaId);
+      }
+    }
+
+    // 1. Remover vínculos na tabela ProduxMateria (matéria-prima ↔ produto)
+    const { error: errPM } = await supabase
+      .from("ProduxMateria")
+      .delete()
+      .eq("id_materia", id)
+      .eq("id_empresa", empresaId);
+    if (errPM) return toast.error("Erro ao desvincular produtos: " + errPM.message);
+
+    // 2. Remover vínculos na tabela molhoxmateria (matéria-prima ↔ molho)
+    const { error: errMM } = await supabase
+      .from("molhoxmateria")
+      .delete()
+      .eq("id_materia", id)
+      .eq("id_empresa", empresaId);
+    if (errMM) return toast.error("Erro ao desvincular molhos: " + errMM.message);
+
+    // 3. Remover registros de estoque vinculados
+    const { error: errEst } = await supabase
+      .from("Estoque")
+      .delete()
+      .eq("id_materia", id)
+      .eq("id_empresa", empresaId);
+    if (errEst) return toast.error("Erro ao remover estoque: " + errEst.message);
+
+    // 4. Remover registros de gastos vinculados
+    const { error: errGasto } = await supabase
+      .from("Gastos")
+      .delete()
+      .eq("id_materia", id)
+      .eq("id_empresa", empresaId);
+    if (errGasto) return toast.error("Erro ao remover gastos: " + errGasto.message);
+
+    // 5. Finalmente, deletar a matéria-prima
     const { error } = await supabase.from("MateriaPrima").delete().eq("id", id).eq("id_empresa", empresaId);
     if (error) return toast.error(error.message);
-    toast.success("Matéria-prima excluída");
+
+    toast.success("Matéria-prima excluída com sucesso");
     setToDelete(null);
     load();
   };
@@ -147,7 +206,7 @@ const MateriaPrima = () => {
                   )}
                 </td>
                 <td className="px-4 py-3 text-right">
-                  <Button size="sm" variant="ghost" onClick={() => setToDelete({ id: m.id, nome: m.nome })}>
+                  <Button size="sm" variant="ghost" onClick={() => handleDeleteClick(m.id, m.nome)}>
                     <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
                 </td>
@@ -169,17 +228,49 @@ const MateriaPrima = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir matéria-prima?</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir <strong>{toDelete?.nome}</strong>? Esta ação não pode ser desfeita.
+              {toDelete?.produtosVinculados && toDelete.produtosVinculados.length > 0 ? (
+                <>
+                  <span className="block mb-2">
+                    A matéria-prima <strong>{toDelete?.nome}</strong> está vinculada a {toDelete.produtosVinculados.length} produto(s).
+                  </span>
+                  <span className="block">
+                    Você deseja excluir apenas a matéria-prima (desvinculando-a das receitas) ou excluir também os produtos que dependem dela?
+                  </span>
+                </>
+              ) : (
+                <>
+                  Tem certeza que deseja excluir <strong>{toDelete?.nome}</strong>?
+                  Todos os vínculos com molhos, estoque e gastos relacionados
+                  também serão removidos. Esta ação não pode ser desfeita.
+                </>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
+          <AlertDialogFooter className={toDelete?.produtosVinculados && toDelete.produtosVinculados.length > 0 ? "flex-col sm:flex-row gap-2 sm:gap-0" : ""}>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => toDelete && remove(toDelete.id)}
-            >
-              Excluir
-            </AlertDialogAction>
+            {toDelete?.produtosVinculados && toDelete.produtosVinculados.length > 0 ? (
+              <>
+                <AlertDialogAction
+                  className="bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                  onClick={() => toDelete && remove(toDelete.id, toDelete.produtosVinculados, false)}
+                >
+                  Apenas Desvincular
+                </AlertDialogAction>
+                <AlertDialogAction
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  onClick={() => toDelete && remove(toDelete.id, toDelete.produtosVinculados, true)}
+                >
+                  Excluir com Produtos
+                </AlertDialogAction>
+              </>
+            ) : (
+              <AlertDialogAction
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                onClick={() => toDelete && remove(toDelete.id, [], false)}
+              >
+                Excluir
+              </AlertDialogAction>
+            )}
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
