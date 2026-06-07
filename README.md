@@ -1,268 +1,483 @@
-# 🚀 SalesHub
+# SalesHub / Vendas Pro
 
-> Plataforma inteligente para gestão de vendas, estoque e operações comerciais.
+![Open Source](https://img.shields.io/badge/Open%20Source-Sim-22c55e?style=for-the-badge)
+![Status](https://img.shields.io/badge/Status-Em%20desenvolvimento-f59e0b?style=for-the-badge)
+![Licença](https://img.shields.io/badge/Licen%C3%A7a-A%20definir-64748b?style=for-the-badge)
 
-O **SalesHub** foi desenvolvido para centralizar e simplificar a gestão de negócios em um único ambiente digital. A plataforma permite que empresas acompanhem suas vendas, organizem seus produtos, monitorem indicadores estratégicos e tomem decisões baseadas em dados, reduzindo processos manuais e aumentando a eficiência operacional.
+> Uma aplicação web open source para pequenos negócios gerenciarem vendas, produtos, cardápio, PDV, pedidos de cozinha, custos, empresa e integração com Telegram em um único fluxo operacional.
 
-Nosso objetivo é oferecer uma solução moderna, intuitiva e escalável para empresas que desejam melhorar o controle de suas operações comerciais e impulsionar seus resultados.
+O **SalesHub / Vendas Pro** foi pensado para operações de alimentação e vendas que precisam sair das planilhas e centralizar o processo comercial: do cadastro de insumos até a venda finalizada e entregue.
 
----
-
-# 📋 Visão Geral
-
-Empresas em crescimento frequentemente enfrentam desafios relacionados à organização de vendas, controle de estoque, acompanhamento de métricas e gestão de múltiplos usuários.
-
-O **SalesHub** foi criado para resolver esses problemas através de uma plataforma integrada que proporciona:
-
-* Centralização das informações do negócio;
-* Controle eficiente de vendas e produtos;
-* Acompanhamento de indicadores em tempo real;
-* Maior produtividade da equipe;
-* Redução de erros operacionais;
-* Melhor tomada de decisão baseada em dados.
+<!-- Adicione aqui um screenshot do dashboard -->
 
 ---
 
-# 💡 Como o SalesHub agrega valor às vendas
+## Sumário
 
-O SalesHub vai além do simples registro de transações. A plataforma atua como uma ferramenta estratégica para apoiar o crescimento comercial das empresas.
-
-### 📈 Acompanhamento de desempenho
-
-Permite visualizar indicadores importantes do negócio, facilitando a análise de resultados e a identificação de oportunidades de melhoria.
-
-### 🛒 Gestão organizada de produtos
-
-Mantém informações de produtos e estoque centralizadas, reduzindo inconsistências e melhorando o controle operacional.
-
-### ⚡ Agilidade nos processos
-
-Automatiza tarefas rotineiras e simplifica fluxos de trabalho, permitindo que a equipe dedique mais tempo às atividades que realmente geram receita.
-
-### 👥 Trabalho colaborativo
-
-Possibilita a utilização por múltiplos usuários com diferentes níveis de acesso, promovendo maior organização e segurança na gestão.
-
-### 📊 Decisões baseadas em dados
-
-Com informações consolidadas em um único sistema, gestores conseguem tomar decisões mais rápidas e assertivas.
+- [Visão geral](#visão-geral)
+- [Funcionalidades](#funcionalidades)
+- [Fluxo de uso](#fluxo-de-uso)
+- [Tecnologias utilizadas](#tecnologias-utilizadas)
+- [Como rodar localmente](#como-rodar-localmente)
+- [Variáveis de ambiente](#variáveis-de-ambiente)
+- [Estrutura do projeto](#estrutura-do-projeto)
+- [Testes manuais realizados](#testes-manuais-realizados)
+- [Status atual](#status-atual)
+- [Roadmap](#roadmap)
+- [Problemas conhecidos](#problemas-conhecidos)
+- [Segurança](#segurança)
+- [Como contribuir](#como-contribuir)
+- [Licença](#licença)
+- [Créditos e mantenedores](#créditos-e-mantenedores)
 
 ---
 
-# ✨ Funcionalidades
+## Visão geral
 
-* 🔐 Autenticação de usuários
-* 👥 Controle de acesso por perfis e permissões
-* 🏢 Gestão multiempresa
-* 📦 Cadastro e gerenciamento de produtos
-* 💰 Controle de vendas
-* 📊 Dashboard com métricas e indicadores
-* 🌙 Tema claro e escuro
-* 📱 Interface responsiva
-* 🔄 Atualizações em tempo real
-* ☁️ Integração com serviços em nuvem
+O SalesHub / Vendas Pro é uma plataforma de gestão para pequenos negócios, especialmente lanchonetes, hamburguerias, restaurantes compactos, cozinhas artesanais e operações de venda que precisam controlar produtos, receitas, cardápio e pedidos.
 
----
+A aplicação organiza o fluxo em módulos claros:
 
-# 🛠️ Tecnologias Utilizadas
-
-## Frontend
-
-* React
-* TypeScript
-* Vite
-* Tailwind CSS
-* Shadcn/UI
-* React Router DOM
-
-## Backend e Banco de Dados
-
-* Supabase
-* PostgreSQL
-* Supabase Authentication
-* Row Level Security (RLS)
-
-## Infraestrutura
-
-* Cloudflare Pages
-* Cloudflare CDN
-
-## Ferramentas de Desenvolvimento
-
-* Git
-* GitHub
-* ESLint
+- **Empresa**: cadastro e configurações básicas do negócio.
+- **Categorias**: organização de produtos, insumos e itens.
+- **Matérias-primas**: controle de ingredientes e unidades de medida.
+- **Molhos e receitas auxiliares**: preparos intermediários usados em produtos.
+- **Produtos**: cadastro de itens de revenda ou itens com receita, custo e margem.
+- **Cardápio**: montagem dos itens disponíveis para venda.
+- **PDV**: venda rápida com carrinho e totalização.
+- **Pedidos / Cozinha**: fila operacional para preparo e entrega.
+- **Histórico**: acompanhamento de pedidos entregues.
+- **Telegram**: controle de chats autorizados para integrações.
 
 ---
 
-# 📂 Estrutura do Projeto
+## Funcionalidades
 
-```bash
-src/
-├── components/
-│   ├── ui/
-│   └── ...
-├── pages/
-├── hooks/
-├── integrations/
-│   └── supabase/
-├── lib/
-├── styles/
-└── App.tsx
+### 🔐 Autenticação e acesso
+
+- Tela de autenticação em `/auth`.
+- Cadastro e login de usuários.
+- Redirecionamento para o painel após autenticação.
+- Rotas protegidas por perfil de acesso.
+
+### 🧾 Cadastros operacionais
+
+- Cadastro, listagem e exclusão de categorias.
+- Cadastro de matérias-primas com unidades como unidade, gramas e kg.
+- Cadastro de produtos de revenda.
+- Cadastro de produtos com receita.
+- Cadastro de molhos e receitas auxiliares.
+- Cadastro e edição de informações da empresa.
+
+### 💰 Custos, preço e margem
+
+- Cálculo automático de custo.
+- Exibição de preço de venda.
+- Exibição de margem.
+- Separação entre matéria-prima, molho, produto e item de cardápio.
+
+### 🛒 Cardápio e PDV
+
+- Montagem de itens de cardápio a partir de produtos.
+- Exibição de preço, custo e margem no cardápio.
+- Listagem de itens disponíveis no PDV.
+- Adição de itens ao carrinho.
+- Cálculo do total da venda.
+- Customização de itens.
+- Finalização de venda.
+
+### 🍳 Cozinha e pedidos
+
+- Criação de pedido após venda no PDV.
+- Exibição do pedido na fila da cozinha.
+- Visualização de ingredientes do pedido.
+- Marcação de pedido como entregue.
+- Histórico de vendas entregues com total.
+
+### 💬 Telegram
+
+- Cadastro de IDs de chats autorizados.
+- Listagem de autorizações.
+- Remoção de chats autorizados.
+
+---
+
+## Fluxo de uso
+
+Fluxo principal validado manualmente:
+
+```text
+Cadastro de insumos
+  -> Criação de produto
+  -> Cadastro no cardápio
+  -> Venda no PDV
+  -> Pedido na cozinha
+  -> Marcar como entregue
+  -> Histórico de vendas
 ```
 
+Esse fluxo cobre o caminho central da aplicação: estruturar custos, disponibilizar produtos para venda, vender, preparar e registrar a entrega.
+
 ---
 
-# ⚙️ Instalação
+## Tecnologias utilizadas
 
-### Clonar o repositório
+As tecnologias abaixo foram identificadas a partir do `package.json` e dos arquivos de configuração do projeto.
+
+### Frontend
+
+- **React 18**
+- **TypeScript**
+- **Vite 7**
+- **React Router DOM**
+- **TanStack React Query**
+- **Tailwind CSS**
+- **shadcn/ui**
+- **Radix UI**
+- **Lucide React**
+- **Recharts**
+
+### Formulários e validação
+
+- **React Hook Form**
+- **Zod**
+- **@hookform/resolvers**
+
+### Backend e dados
+
+- **Supabase**
+- **Supabase Auth**
+- **PostgreSQL**
+- Scripts SQL em `supabaseScripts/`
+
+### Qualidade e testes
+
+- **ESLint**
+- **Vitest**
+- **Testing Library**
+- **jsdom**
+
+---
+
+## Como rodar localmente
+
+> Requisitos sugeridos: Node.js instalado e acesso a um projeto Supabase configurado.
+
+Clone o repositório:
 
 ```bash
 git clone https://github.com/Guithentges/Projeto-agil-e-Eficaz.git
 ```
 
-### Acessar o diretório
+Acesse a pasta:
 
 ```bash
 cd Projeto-agil-e-Eficaz
 ```
 
-### Instalar dependências
+Instale as dependências:
 
 ```bash
 npm install
 ```
 
----
+Configure as variáveis de ambiente em um arquivo `.env.local` na raiz do projeto.
 
-# 🔑 Configuração de Ambiente
-
-Crie um arquivo `.env.local` na raiz do projeto:
-
-```env
-VITE_SUPABASE_URL=YOUR_SUPABASE_URL
-VITE_SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY
-```
-
----
-
-# ▶️ Executando o Projeto
-
-Ambiente de desenvolvimento:
+Inicie o servidor de desenvolvimento:
 
 ```bash
 npm run dev
 ```
 
-A aplicação ficará disponível em:
+Pela configuração atual do Vite, a aplicação roda em:
 
 ```text
-http://localhost:5173
+http://localhost:8080
 ```
 
----
-
-# 📦 Build para Produção
-
-Gerar build:
+### Outros comandos disponíveis
 
 ```bash
 npm run build
 ```
 
-Visualizar build localmente:
+Gera a build de produção.
 
 ```bash
 npm run preview
 ```
 
----
-
-# ☁️ Deploy
-
-O deploy da aplicação é realizado através da **Cloudflare Pages**, garantindo:
-
-* Alta disponibilidade;
-* Distribuição global por CDN;
-* Baixa latência;
-* Escalabilidade automática;
-* Entrega rápida de conteúdo estático.
-
-Essa infraestrutura proporciona uma experiência mais rápida e confiável para os usuários finais.
-
----
-
-# 🔒 Segurança
-
-O SalesHub adota práticas modernas de segurança:
-
-* Autenticação via Supabase Auth;
-* Controle de acesso baseado em permissões;
-* Row Level Security (RLS);
-* Variáveis de ambiente protegidas;
-* Processamento seguro de dados sensíveis.
-
----
-
-# 👨‍💻 Equipe de Desenvolvimento
-
-Este projeto foi desenvolvido por:
-
-* Daniel Suassuna
-* Guilherme Hentges
-* Kristyson Alpino
-* Leandro Lima
-* Pedro Victor Gomes
-
----
-
-# 🎯 Objetivos do Projeto
-
-O SalesHub foi criado com a missão de:
-
-* Facilitar a gestão de negócios;
-* Melhorar o controle operacional;
-* Otimizar processos comerciais;
-* Fornecer informações estratégicas em tempo real;
-* Aumentar a produtividade das equipes;
-* Apoiar o crescimento sustentável das empresas.
-
----
-
-# 🤝 Contribuição
-
-Contribuições são sempre bem-vindas.
-
-1. Faça um Fork do projeto
-2. Crie uma branch para sua funcionalidade
+Executa uma prévia local da build.
 
 ```bash
-git checkout -b feature/minha-feature
+npm run lint
 ```
 
-3. Realize seus commits
+Executa a verificação de lint.
 
 ```bash
-git commit -m "feat: adiciona nova funcionalidade"
+npm run test
 ```
 
-4. Envie para seu fork
+Executa os testes com Vitest.
 
 ```bash
-git push origin feature/minha-feature
+npm run test:watch
 ```
 
-5. Abra um Pull Request
+Executa os testes em modo observação.
 
 ---
 
-# 📄 Licença
+## Variáveis de ambiente
 
-Este projeto é disponibilizado para fins acadêmicos e de desenvolvimento.
+O projeto possui um arquivo `.env.example` com as variáveis esperadas para conexão com o Supabase. Para desenvolvimento local, crie um arquivo `.env.local` na raiz do projeto usando placeholders como no exemplo abaixo:
+
+```env
+VITE_SUPABASE_URL=https://seu-projeto.supabase.co
+VITE_SUPABASE_ANON_KEY=sua-chave-publica-anon
+```
+
+> Nunca publique chaves sensíveis, tokens privados ou credenciais administrativas no repositório. A chave anônima do Supabase deve ser usada junto com políticas de segurança adequadas no banco.
 
 ---
 
-# ⭐ SalesHub
+## Estrutura do projeto
 
-Transformando dados em decisões e vendas em resultados.
+Resumo da estrutura principal:
 
+```text
+.
+├── public/
+│   ├── _headers
+│   ├── _redirects
+│   ├── favicon.svg
+│   └── robots.txt
+├── src/
+│   ├── components/
+│   │   └── ui/
+│   ├── hooks/
+│   ├── integrations/
+│   │   └── supabase/
+│   ├── lib/
+│   ├── pages/
+│   ├── test/
+│   ├── App.tsx
+│   └── main.tsx
+├── supabaseScripts/
+│   ├── *.sql
+│   └── finalizar_venda.ts
+├── package.json
+├── vite.config.ts
+├── vitest.config.ts
+└── tailwind.config.ts
+```
+
+### Páginas principais
+
+- `/auth`: autenticação.
+- `/`: dashboard.
+- `/pdv`: ponto de venda.
+- `/pedidos`: cozinha e pedidos.
+- `/cardapio`: itens do cardápio.
+- `/produtos`: produtos e receitas.
+- `/materias`: matérias-primas.
+- `/molhos`: molhos e preparos auxiliares.
+- `/estoque`: estoque.
+- `/categorias`: categorias.
+- `/gastos`: custos e gastos.
+- `/empresa`: dados da empresa.
+- `/telegram`: chats autorizados.
+- `/ajuda`: suporte e orientações.
+
+---
+
+## Testes manuais realizados
+
+### 1. Autenticação
+
+- Tela `/auth` acessada com sucesso.
+- Criação de conta de teste funcionando.
+- Login/cadastro redirecionando para o painel.
+
+### 2. Categorias
+
+- Listagem de categorias padrão.
+- Cadastro de novas categorias.
+- Exclusão de categoria com atualização da lista.
+
+### 3. Matéria-prima
+
+- Cadastro de matérias-primas como Pão, Carne, Queijo e Alface.
+- Uso de unidades como unidade, gramas e kg.
+- Exclusão de matéria-prima sem vínculo funcionando.
+- Tentativa de exclusão de matéria-prima vinculada exibindo alerta correto.
+- Opção de apenas desvincular testada.
+
+### 4. Produtos
+
+- Cadastro de produto de revenda.
+- Cadastro de produto com receita.
+- Cálculo de venda, custo e margem.
+- Modal de confirmação de exclusão de produto funcionando.
+
+### 5. Molhos
+
+- Cadastro de molho.
+- Expansão do card de molho.
+- Tentativa de vincular ingredientes.
+- Necessidade identificada de melhorar a usabilidade do campo de quantidade.
+
+### 6. Cardápio
+
+- Cadastro do item "Hambúrguer Simples".
+- Vinculação de produto ao item.
+- Exibição de preço, custo e margem.
+
+### 7. PDV
+
+- Produto do cardápio aparece no PDV.
+- Adição ao carrinho funcionando.
+- Total calculado corretamente.
+- Customização do item aberta.
+- Venda finalizada.
+
+### 8. Pedidos / Cozinha
+
+- Venda aparece na fila da cozinha.
+- Pedido mostra ingredientes.
+- Pedido marcado como entregue.
+- Histórico mostra venda entregue com total correto.
+
+### 9. Empresa
+
+- Atualização de descrição da empresa funcionando.
+- Mensagem de sucesso exibida.
+
+### 10. Telegram
+
+- Cadastro de ID autorizado testado.
+- Listagem de chat autorizado funcionando.
+- Remoção de autorização funcionando.
+
+---
+
+## Status atual
+
+O projeto está em **desenvolvimento ativo**.
+
+Pontos fortes já observados:
+
+- Interface dark moderna e consistente.
+- Navegação lateral clara.
+- Fluxo principal de venda completo funcionando.
+- Separação bem definida entre matéria-prima, produto, cardápio, PDV e pedidos.
+- Cálculo automático de custo e margem.
+- Confirmações antes de exclusões importantes.
+- Histórico de pedidos entregues.
+- Integração Telegram com controle de chats autorizados.
+
+---
+
+## Roadmap
+
+- Melhorar a usabilidade dos campos numéricos, principalmente quantidade em molhos.
+- Padronizar entrada de valores monetários, aceitando vírgula e ponto.
+- Adicionar validações mais claras para campos obrigatórios.
+- Melhorar feedback após finalizar venda, por exemplo: "Venda criada com sucesso".
+- Testar e validar dashboard após vendas/custos.
+- Testar itens avulsos no PDV.
+- Melhorar consistência de vínculos entre matérias-primas, molhos, produtos e cardápio.
+- Revisar customização do item no PDV.
+- Testar responsividade em mobile/tablet.
+- Testar persistência após logout/login.
+- Reforçar segurança e isolamento entre usuários/empresas.
+- Validar regras no backend/banco, especialmente para estoque, permissões e RLS.
+
+---
+
+## Problemas conhecidos
+
+- Campo de quantidade em Molhos difícil de preencher.
+- Molho Especial apareceu com custo `R$ 0,00/g` mesmo após tentativas de vínculo.
+- Customização no PDV apresentou comportamento inconsistente em um teste.
+- Possível inconsistência após desvincular matéria-prima usada por produto.
+- Finalização de venda poderia ter confirmação visual mais clara.
+
+---
+
+## Segurança
+
+O projeto usa Supabase e possui scripts relacionados a RLS, constraints, triggers e endurecimento de segurança em `supabaseScripts/`.
+
+Recomendações importantes:
+
+- Manter **Row Level Security (RLS)** habilitado nas tabelas sensíveis.
+- Validar permissões por usuário e empresa.
+- Evitar exposição de credenciais privadas.
+- Usar somente variáveis públicas do Vite com prefixo `VITE_` quando elas precisarem chegar ao frontend.
+- Validar regras críticas também no backend/banco, não apenas na interface.
+- Revisar isolamento entre empresas e usuários antes de uso em produção.
+
+---
+
+## Como contribuir
+
+Contribuições são bem-vindas.
+
+1. Faça um fork do projeto.
+2. Crie uma branch para sua alteração:
+
+```bash
+git checkout -b feature/minha-melhoria
+```
+
+3. Implemente a melhoria ou correção.
+4. Rode as verificações disponíveis:
+
+```bash
+npm run lint
+npm run test
+```
+
+5. Envie sua branch:
+
+```bash
+git push origin feature/minha-melhoria
+```
+
+6. Abra um Pull Request descrevendo o que foi alterado, como testar e quais telas foram impactadas.
+
+### Boas práticas para contribuidores
+
+- Prefira alterações pequenas e bem descritas.
+- Inclua evidências de teste quando possível.
+- Não envie credenciais reais.
+- Preserve o fluxo principal de venda.
+- Documente mudanças que afetem banco, RLS ou regras de negócio.
+
+---
+
+## Licença
+
+**Licença a definir.**
+
+Não foi identificado um arquivo de licença na raiz do repositório no momento da escrita deste README.
+
+---
+
+## Créditos e mantenedores
+
+Projeto desenvolvido e mantido pela equipe do **SalesHub / Vendas Pro**.
+
+Mantenedores listados na documentação anterior do projeto:
+
+- Daniel Suassuna
+- Guilherme Hentges
+- Kristyson Alpino
+- Leandro Lima
+- Pedro Victor Gomes
+
+---
+
+Feito para transformar a rotina de vendas em um processo mais claro, rastreável e eficiente.
